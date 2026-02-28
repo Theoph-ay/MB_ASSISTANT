@@ -1,3 +1,13 @@
 langchain
 langchain-groq
 langchain-community
+langchain-core
+langchain-classic
+langchain-pinecone
+fastapi[standard]
+sentence-transformers
+langchain_text_splitters
+python-dotenv
+pymupdf 
+Pillow
+
