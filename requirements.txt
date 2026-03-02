@@ -12,3 +12,4 @@ pymupdf
 Pillow
 pdf2image
 pytesseract
+duckduckgo-search

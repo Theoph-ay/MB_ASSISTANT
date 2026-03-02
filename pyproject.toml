@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "duckduckgo-search>=8.1.1",
     "fastapi[standard]>=0.134.0",
     "langchain>=1.2.10",
     "langchain-classic>=1.0.1",
