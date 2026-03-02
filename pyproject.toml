@@ -13,8 +13,10 @@ dependencies = [
     "langchain-groq>=1.1.2",
     "langchain-pinecone>=0.2.13",
     "langchain-text-splitters>=1.1.1",
+    "pdf2image>=1.17.0",
     "pillow>=12.1.1",
     "pymupdf>=1.27.1",
+    "pytesseract>=0.3.13",
     "python-dotenv>=1.2.1",
     "sentence-transformers>=5.2.3",
 ]

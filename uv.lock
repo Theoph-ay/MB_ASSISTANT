@@ -911,8 +911,10 @@ dependencies = [
     { name = "langchain-groq" },
     { name = "langchain-pinecone" },
     { name = "langchain-text-splitters" },
+    { name = "pdf2image" },
     { name = "pillow" },
     { name = "pymupdf" },
+    { name = "pytesseract" },
     { name = "python-dotenv" },
     { name = "sentence-transformers" },
 ]
@@ -927,8 +929,10 @@ requires-dist = [
     { name = "langchain-groq", specifier = ">=1.1.2" },
     { name = "langchain-pinecone", specifier = ">=0.2.13" },
     { name = "langchain-text-splitters", specifier = ">=1.1.1" },
+    { name = "pdf2image", specifier = ">=1.17.0" },
     { name = "pillow", specifier = ">=12.1.1" },
     { name = "pymupdf", specifier = ">=1.27.1" },
+    { name = "pytesseract", specifier = ">=0.3.13" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "sentence-transformers", specifier = ">=5.2.3" },
 ]
@@ -1250,6 +1254,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pdf2image"
+version = "1.17.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pillow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/d8/b280f01045555dc257b8153c00dee3bc75830f91a744cd5f84ef3a0a64b1/pdf2image-1.17.0.tar.gz", hash = "sha256:eaa959bc116b420dd7ec415fcae49b98100dda3dd18cd2fdfa86d09f112f6d57", size = 12811, upload-time = "2024-01-07T20:33:01.965Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/62/33/61766ae033518957f877ab246f87ca30a85b778ebaad65b7f74fa7e52988/pdf2image-1.17.0-py3-none-any.whl", hash = "sha256:ecdd58d7afb810dffe21ef2b1bbc057ef434dabbac6c33778a38a3f7744a27e2", size = 11618, upload-time = "2024-01-07T20:32:59.957Z" },
+]
+
+[[package]]
 name = "pillow"
 version = "12.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1474,6 +1490,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2b/29/690202b38b93cf77b73a29c25a63a2b6f3fcb36b1f75006e50b8dee7c108/pymupdf-1.27.1-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:4f1837554134fb45d390a44de8844b2ca9b6c901c82ccc90b340e3b7f3b126ca", size = 25167965, upload-time = "2026-02-11T22:36:35.478Z" },
     { url = "https://files.pythonhosted.org/packages/8a/81/f937e6aa606fd263c3a45d0ff0f0bbdbf3fb779933091fc0f6179513cc93/pymupdf-1.27.1-cp310-abi3-win32.whl", hash = "sha256:fa33b512d82c6c4852edadf57f22d5f27d16243bb33dac0fbe4eb0f281c5b17e", size = 18006253, upload-time = "2026-02-12T13:48:07.129Z" },
     { url = "https://files.pythonhosted.org/packages/3e/99/fe4a7752990bf65277718fffbead4478de9afd1c7288d7a6d643f79a6fa7/pymupdf-1.27.1-cp310-abi3-win_amd64.whl", hash = "sha256:4b6268dff3a9d713034eba5c2ffce0da37c62443578941ac5df433adcde57b2f", size = 19236703, upload-time = "2026-02-11T15:04:19.607Z" },
+]
+
+[[package]]
+name = "pytesseract"
+version = "0.3.13"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "pillow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9f/a6/7d679b83c285974a7cb94d739b461fa7e7a9b17a3abfd7bf6cbc5c2394b0/pytesseract-0.3.13.tar.gz", hash = "sha256:4bf5f880c99406f52a3cfc2633e42d9dc67615e69d8a509d74867d3baddb5db9", size = 17689, upload-time = "2024-08-16T02:33:56.762Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7a/33/8312d7ce74670c9d39a532b2c246a853861120486be9443eebf048043637/pytesseract-0.3.13-py3-none-any.whl", hash = "sha256:7a99c6c2ac598360693d83a416e36e0b33a67638bb9d77fdcac094a3589d4b34", size = 14705, upload-time = "2024-08-16T02:36:10.09Z" },
 ]
 
 [[package]]

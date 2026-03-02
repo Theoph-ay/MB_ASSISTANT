@@ -10,4 +10,3 @@ langchain_text_splitters
 python-dotenv
 pymupdf 
 Pillow
-
