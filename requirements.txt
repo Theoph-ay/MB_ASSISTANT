@@ -8,5 +8,7 @@ fastapi[standard]
 sentence-transformers
 langchain_text_splitters
 python-dotenv
-pymupdf 
+pymupdf
 Pillow
+pdf2image
+pytesseract
