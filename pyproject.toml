@@ -7,7 +7,7 @@ name = "mb-assistant"
 version = "0.1.0"
 description = "This is an AI project to create a study assistant for medical board exams for myself and my classmates"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
     "duckduckgo-search>=8.1.1",
     "fastapi[standard]>=0.134.0",
@@ -18,9 +18,12 @@ dependencies = [
     "langchain-groq>=1.1.2",
     "langchain-pinecone>=0.2.13",
     "langchain-text-splitters>=1.1.1",
+    "llama-parse>=0.6.94",
+    "nest-asyncio>=1.6.0",
     "pdf2image>=1.17.0",
     "pillow>=12.1.1",
     "pymupdf>=1.27.1",
+    "pypdf>=6.7.5",
     "pytesseract>=0.3.13",
     "python-dotenv>=1.2.1",
     "sentence-transformers>=5.2.3",
