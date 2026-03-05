@@ -9,6 +9,7 @@ description = "This is an AI project to create a study assistant for medical boa
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "ddgs>=9.11.2",
     "duckduckgo-search>=8.1.1",
     "fastapi[standard]>=0.134.0",
     "langchain>=1.2.10",
