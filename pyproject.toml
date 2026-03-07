@@ -12,6 +12,7 @@ dependencies = [
     "ddgs>=9.11.2",
     "duckduckgo-search>=8.1.1",
     "fastapi[standard]>=0.134.0",
+    "groq>=0.37.1",
     "langchain>=1.2.10",
     "langchain-classic>=1.0.1",
     "langchain-community>=0.4.1",
