@@ -1823,6 +1823,7 @@ dependencies = [
     { name = "pypdf" },
     { name = "pytesseract" },
     { name = "python-dotenv" },
+    { name = "python-multipart" },
     { name = "sentence-transformers" },
     { name = "xmltodict" },
 ]
@@ -1850,6 +1851,7 @@ requires-dist = [
     { name = "pypdf", specifier = ">=6.7.5" },
     { name = "pytesseract", specifier = ">=0.3.13" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "sentence-transformers", specifier = ">=5.2.3" },
     { name = "xmltodict", specifier = ">=1.0.4" },
 ]
