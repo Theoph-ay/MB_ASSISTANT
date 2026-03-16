@@ -13,3 +13,8 @@ wheels/
 .env
 #Folder containing the pdfs for privacy
 /data
+
+
+#database
+*.db
+*.sqlite

@@ -13,3 +13,15 @@ Pillow
 pdf2image
 pytesseract
 duckduckgo-search
+
+# Database
+sqlmodel
+psycopg[binary]
+alembic
+
+# Authentication & Security
+passlib[argon2]
+pyjwt
+python-multipart
+authlib
+httpx
