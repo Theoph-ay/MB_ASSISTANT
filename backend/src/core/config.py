@@ -6,15 +6,16 @@ class Settings(BaseSettings):
 
     vision_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
     llm: str = "openai/gpt-oss-120b"
+    #db url in .env format : DATABASE_URL=postgresql+psycopg://dbuser:db-password@db_service:5432/mydb
     DATABASE_URL: str #Pydantic should get this from .env automatically
+    PINECONE_API_KEY: str
+    PINECONE_INDEX_NAME: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore"
     )
-
-    #db url in .env format : DATABASE_URL=postgresql+psycopg://dbuser:db-password@db_service:5432/mydb
 
 
 settings = Settings()
