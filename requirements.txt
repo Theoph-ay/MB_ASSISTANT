@@ -20,7 +20,7 @@ psycopg[binary]
 alembic
 
 # Authentication & Security
-passlib[argon2]
+pwdlib[argon2]
 pyjwt
 python-multipart
 authlib
