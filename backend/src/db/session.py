@@ -3,6 +3,8 @@ from sqlmodel import Session, SQLModel
 
 from src.core.config import DATABASE_URL
 
+
+def create_engine():
 engine = sqlmodel.create_engine(DATABASE_URL)
 
 #init db
