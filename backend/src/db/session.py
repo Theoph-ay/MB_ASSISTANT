@@ -1,9 +1,9 @@
 import sqlmodel
 from sqlmodel import Session, SQLModel
 
-from src.core.config import DATABASE_URL
+from src.core.config import settings
 
-engine = sqlmodel.create_engine(DATABASE_URL)
+engine = sqlmodel.create_engine(settings.DATABASE_URL)
 
 #init db
 def init_db():
