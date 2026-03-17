@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str #Pydantic should get this from .env automatically
     PINECONE_API_KEY: str
     PINECONE_INDEX_NAME: str
+    GROQ_API_KEY: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
