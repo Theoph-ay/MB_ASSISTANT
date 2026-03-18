@@ -7,14 +7,14 @@ from typing import List
 
 from src.db.session import get_session
 from src.models.chat import Chat
-from src.schemas.chat import ChatRequest, ChatResponse, ChatSidebarResponse, ChatUpdate
+from src.schemas.chat import ChatResponse, ChatSidebarResponse, ChatUpdate
 from src.api.agent import agent_executor
 
 router = APIRouter()
 
-@router.post("/chat", response_model=ChatRequest)
+@router.post("/chat", response_model=ChatResponse)
 async def chat_with_assistant(
-    request: ChatRequest,
+    request: ChatResponse,
     db: Session = Depends(get_session),
 ):
     """
