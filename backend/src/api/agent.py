@@ -65,7 +65,7 @@ workflow.add_node("summarizer", summarize_conversation)
 # Add edges
 workflow.add_edge(START, "agent")
 
-def should_continue(state: State) -> Literal["tools", "summarize", END]:
+def should_continue(state: State) -> Literal["tools", "summarizer", END]:
     """
     Logic to router between tools, summary or finishing.
     """
@@ -75,14 +75,14 @@ def should_continue(state: State) -> Literal["tools", "summarize", END]:
         return "tools"
     #if conversation long (> 6 messages), go to sumarize
     if len(state["messages"]) > 6:
-        return "summarize"
+        return "summarizer"
     
     return END
 
 # Add edges
 workflow.add_conditional_edges("agent", should_continue)
 workflow.add_edge("tools", "agent")
-workflow.add_edge("summarize", END)
+workflow.add_edge("summarizer", END)
 
 # Compile the graph
 agent_executor = workflow.compile(
