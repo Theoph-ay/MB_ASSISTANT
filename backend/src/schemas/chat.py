@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID, uuid
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
@@ -34,3 +34,13 @@ class ChatHistory(BaseModel):
     thread_id: str
     messages: List[ChatMessage]
     summary: Optional[str] = None
+
+class ChatSidebarResponse(BaseModel):
+    thread_id: uuid.UUID
+    title: str
+    updated_at: datetime
+
+class ChatUpdate(BaseModel):
+    thread_id: uuid.UUID
+    message_index: int  # Logic: Which 'bubble' in the list are we editing?
+    new_content: str
