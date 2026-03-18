@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
 from src.db.session import engine
-from src.api.router import chat, user  
+from src.api.router import chats, user  
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 # Logic: Registering your "Wards" (Endpoints)
-app.include_router(chat.router, prefix="/api/v1/chat", tags=["Clinical Chat"])
+app.include_router(chats.router, prefix="/api/v1/chat", tags=["Clinical Chat"])
 app.include_router(user.router, prefix="/api/v1/user", tags=["Student Profile"])
 
 @app.get("/")
