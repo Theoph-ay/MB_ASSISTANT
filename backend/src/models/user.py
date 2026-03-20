@@ -20,7 +20,10 @@ class User(UserBase, table=True):
 
     username: str = Field(unique=True, index=True, max_length=50)
     email: str = Field(unique=True, index=True, max_length=120)
-    hashed_password: str = Field(max_length=255)
+    
+    hashed_password: Optional[str] = Field(default=None)
+    google_id: Optional[str] = Field(default=None, unique=True)
+    auth_provider: str = Field(default="local") # 'local' or 'google'
     
     profile_image: str = Field(default="default_med.jpg", max_length=255)
     is_verified: bool = Field(default=False)
