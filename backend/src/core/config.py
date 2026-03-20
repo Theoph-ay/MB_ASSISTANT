@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str
     GROQ_API_KEY: str
     HUGGINGFACE_TOKEN: str
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
 
     secret_key: str
     algorithm: str = "HS256"
