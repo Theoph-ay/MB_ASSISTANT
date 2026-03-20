@@ -23,6 +23,7 @@ class User(UserBase, table=True):
     hashed_password: str = Field(max_length=255)
     
     profile_image: str = Field(default="default_med.jpg", max_length=255)
+    is_verified: bool = Field(default=False)
     
     chats: List["Chat"] = Relationship(
         back_populates="user",
