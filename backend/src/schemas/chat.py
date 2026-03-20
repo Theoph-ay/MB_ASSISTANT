@@ -31,6 +31,10 @@ class ChatResponse(BaseModel):
     thread_id: str
     timestamp: datetime = Field(default_factory=datetime.now)
 
+class ChatRequest(BaseModel):
+    thread_id: str
+    message: str
+
 class ChatHistory(BaseModel):
     thread_id: str
     messages: List[ChatMessage]
@@ -41,7 +45,5 @@ class ChatSidebarResponse(BaseModel):
     title: str
     updated_at: datetime
 
-class ChatUpdate(BaseModel):
-    thread_id: uuid.UUID
+class ChatUpdate(ChatRequest):
     message_index: int  # Logic: Which 'bubble' in the list are we editing?
-    new_content: str
