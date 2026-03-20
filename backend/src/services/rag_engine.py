@@ -29,7 +29,7 @@ def get_embeddings():
     Initializes the BGE model via API with robust deployment.
     """
     return RobustHFEmbeddings(
-        api_key=settings.HUGGINGFACE_API_KEY, 
+        api_key=settings.HUGGINGFACE_TOKEN, 
         model_name="BAAI/bge-large-en-v1.5"
     )
 
