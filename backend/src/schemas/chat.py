@@ -47,3 +47,15 @@ class ChatSidebarResponse(BaseModel):
 
 class ChatUpdate(ChatRequest):
     message_index: int  # Logic: Which 'bubble' in the list are we editing?
+
+class RenameRequest(BaseModel):
+    thread_id: uuid.UUID
+    new_title: str
+
+
+class DeleteRequest(BaseModel):
+    thread_id: uuid.UUID
+
+
+class ShareRequest(BaseModel):
+    thread_id: uuid.UUID
