@@ -7,14 +7,14 @@ from typing import List
 
 from src.db.session import get_session
 from src.models.chat import Chat
-from src.schemas.chat import ChatResponse, ChatSidebarResponse, ChatUpdate
+from src.schemas.chat import ChatRequest, ChatResponse, ChatSidebarResponse, ChatUpdate
 from src.api.agent import agent_executor
 
 router = APIRouter()
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("", response_model=ChatResponse)
 async def chat_with_assistant(
-    request: ChatResponse,
+    request: ChatRequest,
     db: Session = Depends(get_session),
 ):
     """
@@ -115,3 +115,5 @@ async def edit_message(update: ChatUpdate, db: Session = Depends(get_session)):
     db.commit()
     
     return {"status": "success", "message": "History rewound to edit point."}
+
+    

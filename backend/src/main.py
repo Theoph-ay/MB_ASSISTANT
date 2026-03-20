@@ -5,7 +5,6 @@ from sqlmodel import SQLModel
 
 from src.db.session import engine
 from src.api.router import chats, user  
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("MB_ASSISTANT: Initializing Database...")
