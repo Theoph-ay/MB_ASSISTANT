@@ -1,4 +1,5 @@
 import os
+from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +13,13 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str
     GROQ_API_KEY: str
     HUGGINGFACE_TOKEN: str
+
+    secret_key: str
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+
+    max_file_size: int = 5 * 1024 * 1024 #5MB
+    allowed_image_extensions: List[str] = [".jpg", ".jpeg", ".png", ".webp"]
 
     model_config = SettingsConfigDict(
         env_file=".env",
