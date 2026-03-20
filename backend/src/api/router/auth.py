@@ -1,99 +1,46 @@
-from datetime import UTC, datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 
-import jwt
-
-from fastapi.security import OAuth2PasswordBearer
-from pwdlib import PasswordHash
-
-from typing import Annotated
-from fastapi import Depends, HTTPException, status
-
-from sqlmodel import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, Session
 
 from src.core.config import settings
 from src.models.user import User
-from src.db.database import get_session
+from src.core.security import get_google_user_info, create_access_token
+from src.db.session import get_session
 
-password_hash = PasswordHash.recommended()
+router = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/users/token")
-
-
-def hash_password(password: str) -> str:
-    return password_hash.hash(password)
-
-
-def verify_password(password: str, hashed_password: str) -> bool:
-    return password_hash.verify(password, hashed_password)
-
-#create access token
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    """
-    Create a JWT access token.
-    """
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(UTC) + expires_delta
-    else:
-        expire = datetime.now(UTC) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, 
-        settings.SECRET_KEY.get_secret_value(), 
-        algorithm=settings.ALGORITHM
+@router.get("/login/google")
+async def google_login():
+    auth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?client_id={settings.GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={settings.GOOGLE_REDIRECT_URI}&response_type=code&scope=openid%20email%20profile"
     )
-    return encoded_jwt
+    return RedirectResponse(url=auth_url)
 
-def verify_access_token(token: str) -> str:
-    """
-    Verify a JWT access token and return the subject (user id) if valid.
-    """
-    try:
-        payload= jwt.decode(
-            token,
-            settings.SECRET_KEY.get_secret_value(),
-            algorithms=[settings.ALGORITHM],
-            options={"require": ["exp", "sub"]},
-        )
-        sub = payload.get("sub")
-        if sub is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authorized",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return sub
+@router.get("/google/callback")
+async def google_callback(code: str, db: Session = Depends(get_session)):
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_session)
-) -> User:
-    """
-    Get the current user from the access token.
-    """
-    user_id = verify_access_token(token)
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    user = await db.get(User, user_id) #only works for primaty keys, else use selct, where.
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authorized",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+    google_data = await get_google_user_info(code)
+    user_info = await get_google_user_info(code)
 
-CurrentUser = Annotated[User, Depends(get_current_user)]
+    statement = select(User).where(User.email == google_data["email"])
+    existing_user = db.exec(statement).first()
+
+    if existing_user:
+        return existing_user
+    else:
+        new_user = User(
+            email=google_data["email"],
+            full_name=google_data["name"],
+            google_id=google_data["sub"],
+            auth_provider="google"
+        )
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        return new_user
+
+    # Issue Token
+    token = create_access_token({"sub": str(new_user.id)})
+    return {"access_token": token, "token_type": "bearer"}   
