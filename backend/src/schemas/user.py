@@ -7,6 +7,7 @@ class UserBase(SQLModel):
     email: str = Field(unique=True, index=True, nullable=False)
     full_name: str = Field(unique=True, index=True, nullable=False)
     is_active: bool = Field(default=True)
+    is_verified: bool = Field(default=False)
 
 class UserCreate(UserBase):
     password: str = Field(nullable=False)
