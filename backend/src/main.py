@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="MB_ASSISTANT API",
-    description="AI Assistant for MBBS 2027 Students - Stroke & ENT Focus",
+    description="AI Assistant for MBBS Students- Paediatrics, OnG Focus",
     version="0.1.0",
     lifespan=lifespan
 )
@@ -30,8 +30,8 @@ app.add_middleware(
 )
 
 # Logic: Registering your "Wards" (Endpoints)
-app.include_router(chats.router, prefix="/api/v1/chat", tags=["Clinical Chat"])
-app.include_router(user.router, prefix="/api/v1/user", tags=["Student Profile"])
+app.include_router(chats.router, prefix="/api/chat", tags=["Clinical Chat"])
+app.include_router(user.router, prefix="/api/user", tags=["Student Profile"])
 
 @app.get("/")
 def home():
