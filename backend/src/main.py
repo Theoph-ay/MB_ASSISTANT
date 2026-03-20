@@ -3,13 +3,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
-from src.db.session import engine
+from src.db.session import engine, init_db
 from src.api.router import chats, user  
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("MB_ASSISTANT: Initializing Database...")
-    SQLModel.metadata.create_all(engine)
+    init_db()
     yield
+    await engine.dispose()
     print("MB_ASSISTANT: Shutting Down...")
 
 app = FastAPI(
@@ -30,7 +31,7 @@ app.add_middleware(
 
 # Logic: Registering your "Wards" (Endpoints)
 app.include_router(chats.router, prefix="/api/chat", tags=["Clinical Chat"])
-app.include_router(user.router, prefix="/api/user", tags=["Student Profile"])
+app.include_router(user.router, prefix="/api/users", tags=["Student Profile"])
 
 @app.get("/")
 def home():
