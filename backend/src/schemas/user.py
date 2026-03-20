@@ -2,15 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from sqlmodel import Field, SQLModel
+from pydantic import EmailStr
 
 class UserBase(SQLModel):
     email: str = Field(unique=True, index=True, nullable=False)
     full_name: str = Field(unique=True, index=True, nullable=False)
-    is_active: bool = Field(default=True)
-    is_verified: bool = Field(default=False)
 
-class UserCreate(UserBase):
-    password: str = Field(nullable=False)
+class UserCreate(SQLModel):
+    email: EmailStr
 
 class UserRead(UserBase):
     id: uuid.UUID
@@ -19,4 +18,7 @@ class UserRead(UserBase):
 class UserUpdate(SQLModel):
     email: Optional[str] = None
     full_name: Optional[str] = None
-    is_active: Optional[bool] = None
+
+class Token(SQLModel):
+    access_token: str
+    token_type: str

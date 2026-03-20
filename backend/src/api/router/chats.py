@@ -7,7 +7,15 @@ from typing import List
 
 from src.db.session import get_session
 from src.models.chat import Chat
-from src.schemas.chat import ChatRequest, ChatResponse, ChatSidebarResponse, ChatUpdate
+from src.schemas.chat import (
+    ChatRequest, 
+    ChatResponse, 
+    ChatSidebarResponse, 
+    ChatUpdate,
+    RenameRequest,
+    DeleteRequest,
+    ShareRequest
+)
 from src.api.agent import agent_executor
 
 router = APIRouter()
@@ -41,22 +49,36 @@ async def chat_with_assistant(
 
         async for chunk, metadata in agent_executor.astream(
             {"messages": [("user", request.message)]},
-            config=config
+            config=config,
+            stream_mode="messages",
         ):
-            if chunk.content:
+            #only stream agent node content
+            langgraph_node = metadata.get("langgraph_node", "")
+            if langgraph_node == "agent" and chunk.content:
                 full_response += chunk.content
                 yield chunk.content
+
         # After loop finishes, save the final state
-        new_messages = chat_record.messages.copy()
-        new_messages.append({"role": "user", "content":request.message})
-        new_messages.append({"role": "user", "content":request.message})
-        chat_record.messages = new_messages
+        try:
+            new_messages = list(chat_record.messages or [])
+            new_messages.append({"role": "user", "content":request.message})
+            new_messages.append({"role": "assistant", "content":full_response})
+            chat_record.messages = new_messages
+       
+            if chat_record.title == "New Consultation":
+                try:
+                    title_resp = llm.invoke([
+                        ("system", "Generate a concise 3-6 word title summarizing this medical question. Output ONLY the title, nothing else."),
+                        ("user", request.message),
+                    ])
+                    chat_record.title = title_resp.content.strip().strip('"').strip("'")[:60]
+                except Exception as e:
+                    chat_record.title = " ".join(request.message.split()[:5] + "...")
 
-        if chat_record.title == "New Consultation":
-            chat_record.title = " ".join(request.message.split()[:5] + "...")
-
-        db.add(chat_record)
-        db.commit()
+            db.add(chat_record)
+            db.commit()
+        except Exception as e:
+                print(f"Error saving chat history: {e}")
 
     return StreamingResponse(event_generator(), media_type="text/plain")
 
@@ -116,4 +138,68 @@ async def edit_message(update: ChatUpdate, db: Session = Depends(get_session)):
     
     return {"status": "success", "message": "History rewound to edit point."}
 
-    
+# Patch/rename chatsession from sidebar
+@router.patch("/rename")
+async def rename_session(
+    body: RenameRequest,
+    db: Session = Depends(get_session)
+):
+    chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id)).first()
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
+    chat.title = body.new_title.strip() or "Untitled"
+    db.add(chat)
+    db.commit()
+    return {"status": "success", "title": chat.title}
+
+# Delete chatsession from sidebar
+@router.delete("/{thread_id}")
+async def delete_session(
+    thread_id: uuid.UUID,
+    db: Session = Depends(get_session)
+):
+    chat = db.exec(select(Chat).where(Chat.thread_id == thread_id)).first()
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
+    db.delete(chat)
+    db.commit()
+    return {"status": "success", "message": "Chat deleted successfully."}
+
+
+#share chat
+@router.post("/share")
+async def share_chat(
+    body: ShareRequest,
+    db: Session = Depends(get_session)
+):
+    chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id)).first()
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
+    # Generate a share_id if one doesn't exist
+    if not chat.share_id:
+        chat.share_id = str(uuid.uuid4())[:8]
+    chat.is_shared = True
+    db.add(chat)
+    db.commit()
+    db.refresh(chat)
+
+    return {
+        "share_id": chat.share_id,
+        "thread_id": str(chat.thread_id),
+        "message": "Referral link generated successfully."
+    }
+
+# View shared chat
+@router.get("/share/{share_id}")
+async def view_shared_chat(
+    share_id: str,
+    db: Session = Depends(get_session)
+):
+    chat = db.exec(select(Chat).where(Chat.share_id == share_id)).first()
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
+    return {
+        "thread_id": str(chat.thread_id),
+        "title": chat.title,
+        "messages": chat.messages,
+    }

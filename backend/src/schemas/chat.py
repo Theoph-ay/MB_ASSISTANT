@@ -59,3 +59,10 @@ class DeleteRequest(BaseModel):
 
 class ShareRequest(BaseModel):
     thread_id: uuid.UUID
+
+class PaginatedResponse(BaseModel):
+    chats: List[ChatMessage]
+    total: int
+    skip: int
+    limit: int
+    has_more: bool
