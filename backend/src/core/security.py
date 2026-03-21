@@ -113,17 +113,17 @@ async def get_google_user_info(code: str):
             "client_secret": settings.GOOGLE_CLIENT_SECRET,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
         "grant_type": "authorization_code"
-    }
-    resp = await client.post(token_url, data=data)
-    access_token = resp.json().get("access_token")
-    if not access_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No Access Token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    user_info_url = "https://www.googleapis.com/oauth2/v3/userinfo"
-    headers = {"Authorization": f"Bearer {access_token}"}
-    user_resp = await client.get(user_info_url, headers={headers})
-    return user_resp.json()
+        }
+        resp = await client.post(token_url, data=data)
+        access_token = resp.json().get("access_token")
+        if not access_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No Access Token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        user_info_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_resp = await client.get(user_info_url, headers=headers)
+        return user_resp.json()
