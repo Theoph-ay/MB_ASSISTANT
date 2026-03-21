@@ -91,7 +91,114 @@ function ProfilePanel({ onClose, sessions, user, logout }) {
   );
 }
 
+/* ── Shared Chat View ── */
+function SharedChatView({ shareId }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch(`http://localhost:8000/api/chat/share/${shareId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Shared consultation not found');
+        return res.json();
+      })
+      .then(json => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [shareId]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-surface text-on-surface">
+        <div className="flex items-center gap-3">
+          <div className="w-4 h-4 rounded-full bg-primary animate-ping" />
+          <span className="font-headline font-medium">Loading Shared Consultation...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-surface text-error flex-col gap-4">
+        <Icon name="error" size="text-[48px]" />
+        <span className="font-headline font-bold text-lg">{error}</span>
+        <button onClick={() => window.location.href = '/'} className="px-6 py-2 surgical-gradient text-on-primary-container rounded shadow hover:opacity-90">Start Your Own</button>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  return (
+    <div className="flex h-screen w-full max-w-[1440px] mx-auto bg-surface relative flex-col">
+      <header className="h-16 flex items-center justify-between px-8 bg-surface/90 glass-effect border-b border-surface-variant/30 sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <img src="/avatar.png" alt="NEXUS AI Avatar" className="w-8 h-8 rounded-full shadow-[0_4px_12px_rgba(74,142,255,0.2)]" />
+          <h2 className="text-on-surface font-headline font-bold text-lg">NEXUS AI <span className="text-on-surface-variant font-normal">| Shared</span></h2>
+          <span className="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label text-[10px] uppercase font-bold tracking-widest">
+            Read-Only
+          </span>
+        </div>
+        <button onClick={() => window.location.href = '/'} className="px-4 py-2 surgical-gradient text-on-primary-container font-headline font-bold text-sm rounded hover:opacity-90 shadow-[0_4px_12px_rgba(74,142,255,0.15)] transition-opacity">
+          Start Your Own
+        </button>
+      </header>
+
+      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar flex flex-col gap-6 pb-20">
+        <div className="max-w-4xl mx-auto w-full mb-6 text-center">
+          <h1 className="text-2xl font-headline font-bold text-on-surface">{data.title}</h1>
+          <p className="text-sm text-on-surface-variant mt-2 font-medium">This is a read-only shared clinical consultation.</p>
+        </div>
+
+        {data.messages.map((msg, i) => (
+          msg.role === 'user' ? (
+            <div key={i} className="flex flex-col items-end gap-1 w-full max-w-4xl mx-auto group">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-on-surface font-headline text-sm font-medium">Student</span>
+              </div>
+              <div className="relative bg-[#21262d] text-[#e6edf3] p-5 rounded-[0.75rem] rounded-tr-[0.25rem] max-w-[85%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                <p className="font-body text-[15px] leading-[1.6] whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            </div>
+          ) : (
+            <div key={i} className="flex flex-col items-start gap-1 w-full max-w-4xl mx-auto group">
+              <div className="flex items-center gap-2 mb-1">
+                <img src="/avatar.png" alt="NEXUS AI Avatar" className="w-6 h-6 rounded-full object-cover shadow-sm shadow-primary/30" />
+                <span className="text-primary font-headline text-sm font-bold tracking-wide">NEXUS AI</span>
+              </div>
+              <div className="relative bg-[#161b22] text-[#e6edf3] p-6 rounded-[0.75rem] rounded-tl-[0.25rem] max-w-[90%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                <div className="font-body text-[15px] leading-[1.7] prose prose-invert max-w-none prose-p:my-2 prose-headings:my-3 prose-headings:font-headline prose-headings:text-[#e6edf3] prose-a:text-primary hover:prose-a:text-primary-container prose-strong:text-[#e6edf3] prose-ul:my-2 prose-li:my-0.5 prose-th:text-[#e6edf3] prose-td:border-[#30363d] prose-th:border-[#30363d] prose-table:border-[#30363d]">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                </div>
+              </div>
+            </div>
+          )
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [sharedId, setSharedId] = useState(null);
+
+  useEffect(() => {
+    const p = window.location.pathname;
+    if (p.startsWith('/shared/')) {
+      const id = p.split('/shared/')[1];
+      if (id) {
+        setSharedId(id);
+      }
+    }
+  }, []);
+
   const { isAuthenticated, token, user, logout } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -136,7 +243,7 @@ export default function App() {
 
   const loadSessions = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/chat/sessions', {
+      const res = await fetch('http://localhost:8000/api/chat/sessions', {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -152,7 +259,7 @@ export default function App() {
 
   const loadHistory = async (id) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/chat/history/${id}`, {
+      const res = await fetch(`http://localhost:8000/api/chat/history/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -185,7 +292,7 @@ export default function App() {
     setIsStreaming(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/chat', {
+      const response = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,7 +342,7 @@ export default function App() {
     setIsStreaming(true);
 
     try {
-      await fetch('http://localhost:8000/api/v1/chat/edit', {
+      await fetch('http://localhost:8000/api/chat/edit', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -248,7 +355,7 @@ export default function App() {
         }),
       });
 
-      const response = await fetch('http://localhost:8000/api/v1/chat', {
+      const response = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -293,7 +400,7 @@ export default function App() {
   const handleShare = async () => {
     if (!isAuthenticated) return;
     try {
-      const res = await fetch('http://localhost:8000/api/v1/chat/share', {
+      const res = await fetch('http://localhost:8000/api/chat/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ thread_id: threadId.current }),
@@ -357,6 +464,10 @@ export default function App() {
   };
 
   /* ───────────────────────────  PAYMENT GATE  ─────────────────────────────── */
+  if (sharedId) {
+    return <SharedChatView shareId={sharedId} />;
+  }
+
   if (!isAuthenticated) {
     return <AuthGate />;
   }
@@ -433,7 +544,7 @@ export default function App() {
                       onChange={(e) => setRenameValue(e.target.value)}
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
-                          await fetch('http://localhost:8000/api/v1/chat/rename', {
+                          await fetch('http://localhost:8000/api/chat/rename', {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                             body: JSON.stringify({ thread_id: session.thread_id, new_title: renameValue }),
@@ -481,7 +592,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={async () => {
-                        await fetch(`http://localhost:8000/api/v1/chat/delete/${session.thread_id}`, {
+                        await fetch(`http://localhost:8000/api/chat/delete/${session.thread_id}`, {
                           method: 'DELETE',
                           headers: { 'Authorization': `Bearer ${token}` },
                         });
@@ -509,12 +620,12 @@ export default function App() {
           <div className="mt-auto pt-4 flex items-center justify-between border-t border-surface-variant/30">
               <button 
                 onClick={() => setShowProfile(true)}
-                className="flex items-center gap-3 hover:bg-surface-container-high p-2 -ml-2 rounded cursor-pointer transition-colors flex-1 bg-transparent border-none text-on-surface text-left"
+                className="flex items-center gap-3 hover:bg-surface-container-high p-2 -ml-2 rounded cursor-pointer transition-colors flex-1 min-w-0 bg-transparent border-none text-on-surface text-left"
               >
                   <div className="w-8 h-8 rounded-full surgical-gradient flex items-center justify-center flex-shrink-0 font-bold text-on-primary-container">
                     {user?.full_name?.charAt(0) || 'U'}
                   </div>
-                  <div className="flex flex-col truncate">
+                  <div className="flex flex-col flex-1 min-w-0">
                       <span className="text-on-surface font-headline font-bold text-sm leading-tight truncate">{user?.full_name || 'User'}</span>
                       <span className="text-on-surface-variant text-xs truncate">{user?.email || ''}</span>
                   </div>
