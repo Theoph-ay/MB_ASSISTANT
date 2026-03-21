@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
-import { Address, Avatar, Name, Identity } from '@coinbase/onchainkit/identity';
-import { useAccount, useDisconnect } from 'wagmi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import ClinicalPay from './ClinicalPay';
+import { useAuth } from './context/AuthContext';
+import AuthGate from './components/AuthGate';
 
 /* ── Helper: Material Icon shorthand ── */
 function Icon({ name, fill = false, size = 'text-[20px]', className = '' }) {
@@ -19,8 +17,7 @@ function Icon({ name, fill = false, size = 'text-[20px]', className = '' }) {
 }
 
 /* ── Profile Panel ── */
-function ProfilePanel({ onClose, sessions, address }) {
-  const { disconnect } = useDisconnect();
+function ProfilePanel({ onClose, sessions, user, logout }) {
   const firstSession = sessions.length > 0
     ? new Date(sessions[sessions.length - 1].updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Today';
@@ -41,16 +38,18 @@ function ProfilePanel({ onClose, sessions, address }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-          {/* Wallet Identity */}
+          {/* User Identity */}
           <div className="flex flex-col items-center text-center gap-3 py-4">
             <div className="w-20 h-20 rounded-full surgical-gradient flex items-center justify-center shadow-lg shadow-primary/20">
-              <Icon name="account_circle" size="text-5xl" className="text-on-primary-container" />
+              <span className="text-on-primary-container font-headline font-bold text-3xl">
+                {user?.full_name?.charAt(0) || 'U'}
+              </span>
             </div>
             <div>
               <p className="font-headline font-bold text-on-surface text-lg">
-                {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Unknown'}
+                {user?.full_name || 'Dr. Unknown'}
               </p>
-              <p className="text-on-surface-variant text-xs font-medium mt-1">Base Network</p>
+              <p className="text-on-surface-variant text-xs font-medium mt-1">{user?.email}</p>
             </div>
           </div>
 
@@ -69,17 +68,10 @@ function ProfilePanel({ onClose, sessions, address }) {
           {/* Info */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 p-3 bg-surface-container-high rounded-lg">
-              <Icon name="wallet" size="text-[18px]" className="text-primary flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">Wallet Address</p>
-                <p className="text-on-surface text-xs font-mono truncate mt-0.5">{address || '—'}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-surface-container-high rounded-lg">
               <Icon name="verified" size="text-[18px]" className="text-primary flex-shrink-0" />
               <div>
                 <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">Status</p>
-                <p className="text-on-surface text-xs font-bold mt-0.5">Active • Paid</p>
+                <p className="text-on-surface text-xs font-bold mt-0.5">Active</p>
               </div>
             </div>
           </div>
@@ -88,10 +80,10 @@ function ProfilePanel({ onClose, sessions, address }) {
         {/* Footer */}
         <div className="p-6 border-t border-surface-variant/30">
           <button
-            onClick={() => { disconnect(); onClose(); }}
+            onClick={() => { logout(); onClose(); }}
             className="w-full flex items-center justify-center gap-2 h-11 rounded-lg border border-error/30 text-error font-headline font-bold text-sm hover:bg-error/10 transition-colors"
           >
-            <Icon name="logout" size="text-[18px]" /> Disconnect Wallet
+            <Icon name="logout" size="text-[18px]" /> Disconnect
           </button>
         </div>
       </div>
@@ -100,8 +92,7 @@ function ProfilePanel({ onClose, sessions, address }) {
 }
 
 export default function App() {
-  const { address, isConnected } = useAccount();
-  const [hasPaid, setHasPaid] = useState(false);
+  const { isAuthenticated, token, user, logout } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
@@ -125,9 +116,6 @@ export default function App() {
   const threadId = useRef(crypto.randomUUID());
   const menuRef = useRef(null);
 
-  // Admin wallet bypass (works in both dev and prod)
-  const ADMIN_WALLET = (import.meta.env.VITE_ADMIN_WALLET || '').toLowerCase();
-
   // Close 3-dot menu when clicking outside
   useEffect(() => {
     const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpenId(null); };
@@ -146,26 +134,11 @@ export default function App() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  // Check payment status from localStorage + admin bypass
-  useEffect(() => {
-    if (address) {
-      // Admin bypass: auto-pay if wallet matches
-      if (ADMIN_WALLET && address.toLowerCase() === ADMIN_WALLET) {
-        setHasPaid(true);
-        return;
-      }
-      const paid = localStorage.getItem(`nexus_ai_paid_${address}`);
-      setHasPaid(paid === 'true');
-    } else {
-      setHasPaid(false);
-    }
-  }, [address]);
-
   const loadSessions = async () => {
     try {
       const res = await fetch('http://localhost:8000/api/v1/chat/sessions', {
         headers: {
-          'x-wallet-address': address || 'anonymous',
+          'Authorization': `Bearer ${token}`,
         }
       });
       if (res.ok) {
@@ -181,7 +154,7 @@ export default function App() {
     try {
       const res = await fetch(`http://localhost:8000/api/v1/chat/history/${id}`, {
         headers: {
-          'x-wallet-address': address || 'anonymous',
+          'Authorization': `Bearer ${token}`,
         }
       });
       if (res.ok) {
@@ -195,20 +168,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (isConnected && hasPaid && address) {
+    if (isAuthenticated && token) {
       loadSessions();
     }
-  }, [isConnected, hasPaid, address]);
-
-  const handlePaymentSuccess = () => {
-    setHasPaid(true);
-    localStorage.setItem(`nexus_ai_paid_${address}`, 'true');
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, token]);
 
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
-    // Block sending if not connected or not paid
-    if (!isConnected || !hasPaid) return;
+    // Block sending if not connected
+    if (!isAuthenticated) return;
 
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -216,11 +185,11 @@ export default function App() {
     setIsStreaming(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/chat/chat', {
+      const response = await fetch('http://localhost:8000/api/v1/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-wallet-address': address || 'anonymous',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ message: input, thread_id: threadId.current }),
       });
@@ -270,7 +239,7 @@ export default function App() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-wallet-address': address || 'anonymous',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ 
           thread_id: threadId.current, 
@@ -279,11 +248,11 @@ export default function App() {
         }),
       });
 
-      const response = await fetch('http://localhost:8000/api/v1/chat/chat', {
+      const response = await fetch('http://localhost:8000/api/v1/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-wallet-address': address || 'anonymous',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ message: editCache, thread_id: threadId.current }),
       });
@@ -322,11 +291,11 @@ export default function App() {
 
   // ── Share consultation ──
   const handleShare = async () => {
-    if (!canChat) return;
+    if (!isAuthenticated) return;
     try {
       const res = await fetch('http://localhost:8000/api/v1/chat/share', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-wallet-address': address || 'anonymous' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ thread_id: threadId.current }),
       });
       if (res.ok) {
@@ -387,12 +356,9 @@ export default function App() {
     printWindow.onload = () => { printWindow.print(); };
   };
 
-  // Determine which view gate to show
-  const canChat = isConnected && hasPaid;
-
   /* ───────────────────────────  PAYMENT GATE  ─────────────────────────────── */
-  if (isConnected && !hasPaid) {
-    return <ClinicalPay onSuccess={handlePaymentSuccess} />;
+  if (!isAuthenticated) {
+    return <AuthGate />;
   }
 
   /* ─────────────────────────  MAIN CHAT INTERFACE  ────────────────────────── */
@@ -411,7 +377,8 @@ export default function App() {
         <ProfilePanel
           onClose={() => setShowProfile(false)}
           sessions={sessions}
-          address={address}
+          user={user}
+          logout={logout}
         />
       )}
 
@@ -434,7 +401,7 @@ export default function App() {
           <div className="flex flex-col gap-4">
             <button
               onClick={handleNewConsultation}
-              disabled={!canChat}
+              disabled={!isAuthenticated}
               className="w-full h-11 surgical-gradient text-on-primary-container font-headline font-bold text-sm rounded flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-[0_8px_16px_rgba(74,142,255,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Icon name="add" size="text-[20px]" /> New Consultation
@@ -448,18 +415,13 @@ export default function App() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-            </div>
+             </div>
           </div>
 
           {/* Navigation */}
           <nav className="flex flex-col gap-1 flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2">
             <h2 className="text-on-surface-variant font-label text-[10px] uppercase font-bold tracking-widest mb-2 mt-4 px-2">Recent Consultations</h2>
-            {!canChat && (
-              <div className="px-3 py-4 text-center text-on-surface-variant text-xs font-medium">
-                Connect wallet to see your sessions.
-              </div>
-            )}
-            {canChat && sessions.filter(s => s.title.toLowerCase().includes(searchQuery.toLowerCase())).map(session => (
+            {isAuthenticated && sessions.filter(s => s.title.toLowerCase().includes(searchQuery.toLowerCase())).map(session => (
               <div key={session.thread_id} className="relative group/session">
                 {/* Rename inline input */}
                 {renameId === session.thread_id ? (
@@ -473,7 +435,7 @@ export default function App() {
                         if (e.key === 'Enter') {
                           await fetch('http://localhost:8000/api/v1/chat/rename', {
                             method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json', 'x-wallet-address': address || 'anonymous' },
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                             body: JSON.stringify({ thread_id: session.thread_id, new_title: renameValue }),
                           });
                           setRenameId(null);
@@ -521,7 +483,7 @@ export default function App() {
                       onClick={async () => {
                         await fetch(`http://localhost:8000/api/v1/chat/delete/${session.thread_id}`, {
                           method: 'DELETE',
-                          headers: { 'x-wallet-address': address || 'anonymous' },
+                          headers: { 'Authorization': `Bearer ${token}` },
                         });
                         setMenuOpenId(null);
                         if (threadId.current === session.thread_id) handleNewConsultation();
@@ -536,47 +498,33 @@ export default function App() {
                 )}
               </div>
             ))}
-            {canChat && sessions.length === 0 && (
+            {isAuthenticated && sessions.length === 0 && (
               <div className="px-3 py-4 text-center text-on-surface-variant text-xs font-medium">
                 No consultations yet.
               </div>
             )}
           </nav>
 
-          {/* User Identity - OnchainKit */}
+          {/* User Identity */}
           <div className="mt-auto pt-4 flex items-center justify-between border-t border-surface-variant/30">
-            {isConnected ? (
-              <Wallet>
-                <ConnectWallet className="flex items-center gap-3 hover:bg-surface-container-high p-2 -ml-2 rounded cursor-pointer transition-colors flex-1 bg-transparent border-none text-on-surface">
-                  <Avatar className="w-8 h-8 rounded flex-shrink-0" />
-                  <div className="flex flex-col truncate">
-                    <Name className="text-on-surface font-headline font-bold text-sm leading-tight truncate" />
+              <button 
+                onClick={() => setShowProfile(true)}
+                className="flex items-center gap-3 hover:bg-surface-container-high p-2 -ml-2 rounded cursor-pointer transition-colors flex-1 bg-transparent border-none text-on-surface text-left"
+              >
+                  <div className="w-8 h-8 rounded-full surgical-gradient flex items-center justify-center flex-shrink-0 font-bold text-on-primary-container">
+                    {user?.full_name?.charAt(0) || 'U'}
                   </div>
-                </ConnectWallet>
-                <WalletDropdown className="border border-outline-variant bg-surface-container-low">
-                  <Identity className="px-4 pt-3 pb-2 hover:bg-surface-container-high" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name className="text-on-surface" />
-                    <Address className="text-on-surface-variant" />
-                  </Identity>
-                  <WalletDropdownDisconnect className="hover:bg-surface-container-high text-error" />
-                </WalletDropdown>
-              </Wallet>
-            ) : (
-              <Wallet>
-                <ConnectWallet className="flex items-center gap-2 surgical-gradient text-on-primary-container font-headline font-bold text-sm rounded px-4 py-2 hover:opacity-90 transition-opacity w-full justify-center">
-                  <Icon name="account_balance_wallet" size="text-[18px]" />
-                  Connect Wallet
-                </ConnectWallet>
-              </Wallet>
-            )}
-            <button
-              onClick={() => setShowProfile(true)}
-              disabled={!isConnected}
-              className="text-on-surface-variant hover:text-on-surface p-2 rounded hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <Icon name="settings" size="text-[20px]" />
-            </button>
+                  <div className="flex flex-col truncate">
+                      <span className="text-on-surface font-headline font-bold text-sm leading-tight truncate">{user?.full_name || 'User'}</span>
+                      <span className="text-on-surface-variant text-xs truncate">{user?.email || ''}</span>
+                  </div>
+              </button>
+              <button
+                onClick={() => setShowProfile(true)}
+                className="text-on-surface-variant hover:text-on-surface p-2 rounded hover:bg-surface-container-high transition-colors"
+              >
+                <Icon name="settings" size="text-[20px]" />
+              </button>
           </div>
         </div>
       </aside>
@@ -593,14 +541,14 @@ export default function App() {
             )}
             <h2 className="text-on-surface font-headline font-bold text-lg">NEXUS AI</h2>
             <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-label text-[10px] uppercase font-bold tracking-widest">
-              {canChat ? 'Active' : 'Connect Wallet'}
+              Active
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleDownloadPDF} disabled={!canChat} className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors disabled:opacity-30" title="Export to PDF">
+            <button onClick={handleDownloadPDF} disabled={!isAuthenticated} className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors disabled:opacity-30" title="Export to PDF">
               <Icon name="download" size="text-[20px]" />
             </button>
-            <button onClick={handleShare} disabled={!canChat} className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors disabled:opacity-30" title="Share Consultation">
+            <button onClick={handleShare} disabled={!isAuthenticated} className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors disabled:opacity-30" title="Share Consultation">
               <Icon name="share" size="text-[20px]" />
             </button>
           </div>
@@ -706,8 +654,6 @@ export default function App() {
         {/* Input Area */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-surface via-surface/90 to-transparent pt-10 pb-6 px-8 pointer-events-none">
           <div className="max-w-4xl mx-auto w-full pointer-events-auto">
-            {canChat ? (
-              /* ── Connected & Paid: Normal Input ── */
               <div className="bg-surface-bright/80 glass-effect rounded-[0.5rem] border border-outline-variant/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex items-end gap-2 p-3 transition-all focus-within:border-primary/50 focus-within:bg-surface-bright">
                 <button className="p-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors flex-shrink-0 mb-0.5" title="Attach Medical File">
                   <Icon name="attach_file" size="text-[20px]" />
@@ -729,19 +675,6 @@ export default function App() {
                   <Icon name="send" fill size="text-[20px]" />
                 </button>
               </div>
-            ) : (
-              /* ── Not Connected: Prompt to connect ── */
-              <div className="bg-surface-bright/80 glass-effect rounded-[0.5rem] border border-outline-variant/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex items-center justify-center gap-4 p-4">
-                <Icon name="lock" size="text-[20px]" className="text-on-surface-variant" />
-                <p className="text-on-surface-variant font-body text-sm">Connect your wallet to start chatting with NEXUS AI</p>
-                <Wallet>
-                  <ConnectWallet className="surgical-gradient text-on-primary-container font-headline font-bold text-sm rounded-lg px-5 py-2.5 hover:opacity-90 transition-opacity shadow-[0_4px_12px_rgba(74,142,255,0.2)] flex items-center gap-2">
-                    <Icon name="account_balance_wallet" size="text-[16px]" />
-                    Connect
-                  </ConnectWallet>
-                </Wallet>
-              </div>
-            )}
               <span className="text-on-surface-variant/70 font-label text-[10px] font-medium tracking-wide flex items-center justify-center gap-1 flex-wrap mt-3">
                 <span>NEXUS AI can make mistakes. Always verify critical clinical information.</span>
                 <span className="opacity-50 mx-1">•</span>

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.models.user import User
-from src.db.database import get_session
+from src.db.session import get_session
 
 password_hash = PasswordHash.recommended()
 
