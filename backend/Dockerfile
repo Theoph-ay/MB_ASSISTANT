@@ -13,7 +13,7 @@ WORKDIR /app
 
 # Copy dependency files first for caching
 COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
 # Copy application source
