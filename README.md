@@ -5,15 +5,16 @@
 </div>
 
 <p align="center">
-  <a href="#about-the-project">About</a> •
-  <a href="#key-features">Features</a> •
-  <a href="#technology-stack">Tech Stack</a> •
+  <a href="#about">About</a> •
+  <a href="#features">Features</a> •
+  <a href="#tech-stack">Tech Stack</a> •
   <a href="#getting-started">Getting Started</a> •
-  <a href="#contributing--sponsorship">Contribute & Sponsor</a>
+  <a href="#contribute">Contribute & Sponsor</a>
 </p>
 
 ---
 
+<a id="about"></a>
 ## 🩺 About the Project
 
 **NEXUS AI** (internally known as MB_ASSISTANT) is a specialized AI consultation engine designed to help medical students revise, analyze clinical cases, and augment their studies. 
@@ -22,6 +23,7 @@
 
 The application serves as a clinical co-pilot, featuring an incredibly fast FastAPI backend, a sleek React frontend, and conversational memory powered by LangGraph to maintain context across patient cases.
 
+<a id="features"></a>
 ## ✨ Key Features
 
 - **Context-Aware Medical AI:** Powered by LangGraph agents and Groq inference to maintain deep conversational context during complex case discussions.
@@ -31,6 +33,7 @@ The application serves as a clinical co-pilot, featuring an incredibly fast Fast
 - **Share & Export:** Instantly generate shareable, read-only links for consultations to share with peers or professors, and export discussions directly to PDF.
 - **Authentication:** Secure user authentication supporting both standard login and external providers.
 
+<a id="tech-stack"></a>
 ## 🛠 Technology Stack
 
 ### Backend
@@ -46,6 +49,7 @@ The application serves as a clinical co-pilot, featuring an incredibly fast Fast
 - **Styling:** TailwindCSS
 - **Markdown:** `react-markdown`, `remark-gfm`
 
+<a id="getting-started"></a>
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -103,6 +107,7 @@ docker compose up --build
 
 ---
 
+<a id="contribute"></a>
 ## 🤝 Contributing & Sponsorship
 
 NEXUS AI is an ambitious project aiming to democratize access to high-quality clinical revision tools for medical students worldwide. 
@@ -118,7 +123,8 @@ We are actively seeking sponsorships or grants for:
 - **LLM Inferencing Credits** (Specifically **Groq** for their model speeds)
 - **Pinecone / Vector Database scaling**
 
-If you'd like to collaborate, sponsor the project, or donate cloud credits, please reach out directly at [EMAIL_ADDRESS](olayiwolatheophilusayomide@gmail.com) or [LinkedIn](https://www.linkedin.com/in/theophilus-olayiwola-ab914a231/)!
+If you'd like to collaborate, sponsor the project, or donate cloud credits, please reach out directly at EMAIL_ADDRESS: Olayiwolatheophilusayomide@gmail.com
+or [LinkedIn](https://www.linkedin.com/in/theophilus-olayiwola-ab914a231/)!
 
 ---
 *Disclaimer: NEXUS AI is an educational tool designed for medical students. It is NOT a substitute for professional medical advice, diagnosis, or treatment always verify clinical decisions.*
