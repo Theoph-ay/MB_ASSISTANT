@@ -7,8 +7,8 @@ from src.db.session import engine, init_db
 from src.api.router import chats, user, auth  
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("MB_ASSISTANT: Initializing Database...")
-    await init_db()
+    print("MB_ASSISTANT: Connecting Database...")
+    # await init_db() # Disabled since Alembic is doing schema migrations
     yield
     await engine.dispose()
     print("MB_ASSISTANT: Shutting Down...")
