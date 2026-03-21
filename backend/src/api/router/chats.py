@@ -2,8 +2,10 @@ import json
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from sqlmodel import Session, select
+from sqlmodel import select
 from typing import List
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.session import get_session
 from src.models.chat import Chat
@@ -17,7 +19,7 @@ from src.schemas.chat import (
     ShareRequest
 )
 from src.core.security import CurrentUser
-from src.api.agent import agent_executor
+from src.api.agent import agent_executor, llm
 
 router = APIRouter()
 
@@ -25,7 +27,7 @@ router = APIRouter()
 async def chat_with_assistant(
     request: ChatRequest,
     current_user: CurrentUser,
-    db: Session = Depends(get_session),
+    db: AsyncSession = Depends(get_session),
 ):
     """
     Logic: Receives a message, runs the AI Agent, and persists the history to Postgres.
@@ -69,7 +71,7 @@ async def chat_with_assistant(
        
             if chat_record.title == "New Consultation":
                 try:
-                    title_resp = llm.invoke([
+                    title_resp = await llm.ainvoke([
                         ("system", "Generate a concise 3-6 word title summarizing this medical question. Output ONLY the title, nothing else."),
                         ("user", request.message),
                     ])
@@ -78,7 +80,7 @@ async def chat_with_assistant(
                     chat_record.title = " ".join(request.message.split()[:5] + "...")
 
             db.add(chat_record)
-            db.commit()
+            await db.commit()
         except Exception as e:
                 print(f"Error saving chat history: {e}")
 
@@ -88,7 +90,7 @@ async def chat_with_assistant(
 async def get_chat_session(
     thread_id: uuid.UUID,
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Logic: Fetches the entire conversation history for a specific thread.
@@ -106,7 +108,7 @@ async def get_chat_session(
 @router.get("/sessions", response_model=List[ChatSidebarResponse])
 async def get_user_chat_sessions(
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Logic: Fetches all chat sessions for the current user.
@@ -130,7 +132,7 @@ async def get_user_chat_sessions(
 async def edit_message(
     update: ChatUpdate, 
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     chat = db.exec(select(Chat).where(Chat.thread_id == update.thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
@@ -141,7 +143,7 @@ async def edit_message(
     
     chat.messages = new_messages
     db.add(chat)
-    db.commit()
+    await db.commit()
     
     return {"status": "success", "message": "History rewound to edit point."}
 
@@ -150,14 +152,14 @@ async def edit_message(
 async def rename_session(
     body: RenameRequest,
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     chat.title = body.new_title.strip() or "Untitled"
     db.add(chat)
-    db.commit()
+    await db.commit()
     return {"status": "success", "title": chat.title}
 
 # Delete chatsession from sidebar
@@ -165,13 +167,13 @@ async def rename_session(
 async def delete_session(
     thread_id: uuid.UUID,
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     chat = db.exec(select(Chat).where(Chat.thread_id == thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     db.delete(chat)
-    db.commit()
+    await db.commit()
     return {"status": "success", "message": "Chat deleted successfully."}
 
 
@@ -180,7 +182,7 @@ async def delete_session(
 async def share_chat(
     body: ShareRequest,
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
@@ -190,8 +192,8 @@ async def share_chat(
         chat.share_id = str(uuid.uuid4())[:8]
     chat.is_shared = True
     db.add(chat)
-    db.commit()
-    db.refresh(chat)
+    await db.commit()
+    await db.refresh(chat)
 
     return {
         "share_id": chat.share_id,
@@ -203,7 +205,7 @@ async def share_chat(
 @router.get("/share/{share_id}")
 async def view_shared_chat(
     share_id: str,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     chat = db.exec(select(Chat).where(Chat.share_id == share_id)).first()
     if not chat:
