@@ -80,7 +80,7 @@ function ProfilePanel({ onClose, sessions, user, logout }) {
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       {/* Panel */}
-      <div className="relative ml-auto w-[340px] h-full bg-surface-container-low border-l border-surface-variant/30 shadow-2xl shadow-black/40 flex flex-col animate-in slide-in-from-right">
+      <div className="relative ml-auto w-full md:w-[340px] h-full bg-surface-container-low border-l border-surface-variant/30 shadow-2xl shadow-black/40 flex flex-col animate-in slide-in-from-right">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-surface-variant/30">
           <h2 className="font-headline font-bold text-lg text-on-surface">Profile</h2>
@@ -237,7 +237,7 @@ function SharedChatView({ shareId }) {
 
   return (
     <div className="flex h-screen w-full max-w-[1440px] mx-auto bg-surface relative flex-col">
-      <header className="h-16 flex items-center justify-between px-8 bg-surface/90 glass-effect border-b border-surface-variant/30 sticky top-0 z-10">
+      <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 bg-surface/90 glass-effect border-b border-surface-variant/30 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <img src="/avatar.png" alt="NEXUS AI Avatar" className="w-8 h-8 rounded-full shadow-[0_4px_12px_rgba(74,142,255,0.2)]" />
           <h2 className="text-on-surface font-headline font-bold text-lg">NEXUS AI <span className="text-on-surface-variant font-normal">| Shared</span></h2>
@@ -250,7 +250,7 @@ function SharedChatView({ shareId }) {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar flex flex-col gap-6 pb-20">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar flex flex-col gap-6 pb-20">
         <div className="max-w-4xl mx-auto w-full mb-6 text-center">
           <h1 className="text-2xl font-headline font-bold text-on-surface">{data.title}</h1>
           <p className="text-sm text-on-surface-variant mt-2 font-medium">This is a read-only shared clinical consultation.</p>
@@ -262,7 +262,7 @@ function SharedChatView({ shareId }) {
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-on-surface font-headline text-sm font-medium">Student</span>
               </div>
-              <div className="relative bg-[#21262d] text-[#e6edf3] p-5 rounded-[0.75rem] rounded-tr-[0.25rem] max-w-[85%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+              <div className="relative bg-[#21262d] text-[#e6edf3] p-4 md:p-5 rounded-[0.75rem] rounded-tr-[0.25rem] max-w-[95%] md:max-w-[85%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
                 <p className="font-body text-[15px] leading-[1.6] whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
@@ -272,7 +272,7 @@ function SharedChatView({ shareId }) {
                 <img src="/avatar.png" alt="NEXUS AI Avatar" className="w-6 h-6 rounded-full object-cover shadow-sm shadow-primary/30" />
                 <span className="text-primary font-headline text-sm font-bold tracking-wide">NEXUS AI</span>
               </div>
-              <div className="relative bg-[#161b22] text-[#e6edf3] p-6 rounded-[0.75rem] rounded-tl-[0.25rem] max-w-[90%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+              <div className="relative bg-[#161b22] text-[#e6edf3] p-4 md:p-6 rounded-[0.75rem] rounded-tl-[0.25rem] max-w-[95%] md:max-w-[90%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
                 <div className="font-body text-[15px] leading-[1.7] prose prose-invert max-w-none prose-p:my-2 prose-headings:my-3 prose-headings:font-headline prose-headings:text-[#e6edf3] prose-a:text-primary hover:prose-a:text-primary-container prose-strong:text-[#e6edf3] prose-ul:my-2 prose-li:my-0.5 prose-th:text-[#e6edf3] prose-td:border-[#30363d] prose-th:border-[#30363d] prose-table:border-[#30363d]">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                 </div>
@@ -306,7 +306,8 @@ export default function App() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Welcome, Colleague. How can I assist with your clinical cases or ENT revision today?' }
   ]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [sessions, setSessions] = useState([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -336,6 +337,17 @@ export default function App() {
     const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpenId(null); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Track mobile/desktop breakpoint
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => {
+      setIsMobile(e.matches);
+      if (e.matches) setSidebarOpen(false);
+    };
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
   }, []);
 
   const showToast = (message) => {
@@ -588,7 +600,7 @@ export default function App() {
 
   /* ─────────────────────────  MAIN CHAT INTERFACE  ────────────────────────── */
   return (
-    <div className="flex h-screen w-full max-w-[1440px] mx-auto bg-surface-container-low relative">
+    <div className="flex h-screen w-full max-w-[1440px] mx-auto bg-surface-container-low relative overflow-hidden">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-inverse-surface text-inverse-on-surface px-6 py-3 rounded-full shadow-lg font-headline text-sm font-medium animate-in fade-in slide-in-from-top-4 flex items-center gap-2">
@@ -608,7 +620,11 @@ export default function App() {
       )}
 
       {/* ── Sidebar ── */}
-      <aside className={`${sidebarOpen ? 'w-[280px]' : 'w-0 overflow-hidden'} h-full flex flex-col bg-surface-container-low border-r border-transparent flex-shrink-0 z-20 transition-all duration-300`}>
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed md:relative inset-y-0 left-0 w-[280px] h-full flex flex-col bg-surface-container-low border-r border-surface-variant/30 md:border-transparent flex-shrink-0 z-30 md:z-20 transition-transform duration-300 ${!sidebarOpen ? 'md:-translate-x-0 md:w-0 md:overflow-hidden' : ''}`}>
         <div className="p-6 flex flex-col h-full gap-8 min-w-[280px]">
           {/* Logo */}
           <div className="flex items-center gap-4">
@@ -676,7 +692,7 @@ export default function App() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => loadHistory(session.thread_id)}
+                    onClick={() => { loadHistory(session.thread_id); if (isMobile) setSidebarOpen(false); }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded hover:bg-surface-container-high font-headline font-medium text-sm transition-colors text-left relative ${
                       threadId.current === session.thread_id ? 'bg-surface-container-high text-primary' : 'text-on-surface-variant'
                     }`}
@@ -757,9 +773,9 @@ export default function App() {
       {/* ── Main Chat Area ── */}
       <main className="flex-1 flex flex-col bg-surface relative min-w-0">
         {/* Top Bar */}
-        <header className="h-16 flex items-center justify-between px-8 bg-surface/90 glass-effect border-b border-surface-variant/30 sticky top-0 z-10">
+        <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 bg-surface/90 glass-effect border-b border-surface-variant/30 sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            {!sidebarOpen && (
+            {(!sidebarOpen || isMobile) && (
               <button onClick={toggleSidebar} className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors mr-1" title="Open sidebar">
                 <Icon name="menu" size="text-[20px]" />
               </button>
@@ -780,7 +796,7 @@ export default function App() {
         </header>
 
         {/* Messages */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-8 custom-scrollbar flex flex-col gap-6 pb-32">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar flex flex-col gap-4 md:gap-6 pb-32">
           {messages.map((msg, i) => (
             msg.role === 'user' ? (
               /* ── User Message ── */
@@ -788,9 +804,9 @@ export default function App() {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-on-surface font-headline text-sm font-medium">Student</span>
                 </div>
-                <div className="relative bg-[#21262d] text-[#e6edf3] p-5 rounded-[0.75rem] rounded-tr-[0.25rem] max-w-[85%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                <div className="relative bg-[#21262d] text-[#e6edf3] p-4 md:p-5 rounded-[0.75rem] rounded-tr-[0.25rem] max-w-[95%] md:max-w-[85%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
                   {editingIndex === i ? (
-                    <div className="flex flex-col gap-2 min-w-[300px]">
+                    <div className="flex flex-col gap-2 min-w-0 w-full">
                       <textarea
                         className="w-full bg-[#161b22] text-[#e6edf3] p-2 rounded text-[15px] custom-scrollbar resize-none border border-[#30363d] focus:ring-1 focus:ring-primary outline-none"
                         value={editCache}
@@ -808,7 +824,7 @@ export default function App() {
                   )}
                   {/* Action buttons (Hover) */}
                   {!editingIndex && (
-                    <div className="absolute -left-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                    <div className="flex gap-1 mt-2 md:mt-0 md:absolute md:-left-12 md:top-1/2 md:-translate-y-1/2 md:opacity-0 md:group-hover:opacity-100 transition-opacity md:flex-col">
                       <button
                         onClick={() => { setEditingIndex(i); setEditCache(msg.content); }}
                         className="p-1.5 rounded-full bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#8b949e] hover:text-[#e6edf3] transition-colors shadow-sm"
@@ -834,13 +850,13 @@ export default function App() {
                   <img src="/avatar.png" alt="NEXUS AI Avatar" className="w-6 h-6 rounded-full object-cover shadow-sm shadow-primary/30" />
                   <span className="text-primary font-headline text-sm font-bold tracking-wide">NEXUS AI</span>
                 </div>
-                <div className="relative bg-[#161b22] text-[#e6edf3] p-6 rounded-[0.75rem] rounded-tl-[0.25rem] max-w-[90%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                <div className="relative bg-[#161b22] text-[#e6edf3] p-4 md:p-6 rounded-[0.75rem] rounded-tl-[0.25rem] max-w-[95%] md:max-w-[90%] border border-[#30363d] shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
                   <div className="font-body text-[15px] leading-[1.7] prose prose-invert max-w-none prose-p:my-2 prose-headings:my-3 prose-headings:font-headline prose-headings:text-[#e6edf3] prose-a:text-primary hover:prose-a:text-primary-container prose-strong:text-[#e6edf3] prose-ul:my-2 prose-li:my-0.5 prose-th:text-[#e6edf3] prose-td:border-[#30363d] prose-th:border-[#30363d] prose-table:border-[#30363d]">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   </div>
                   {/* Action buttons (Hover) */}
                   {msg.content && (
-                    <div className="absolute -right-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                    <div className="flex gap-1 mt-2 md:mt-0 md:absolute md:-right-12 md:top-1/2 md:-translate-y-1/2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => { navigator.clipboard.writeText(msg.content); showToast('Message copied to clipboard'); }}
                         className="p-1.5 rounded-full bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#8b949e] hover:text-[#e6edf3] transition-colors shadow-sm"
@@ -877,7 +893,7 @@ export default function App() {
         </div>
 
         {/* Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-surface via-surface/90 to-transparent pt-10 pb-6 px-8 pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-surface via-surface/90 to-transparent pt-10 pb-4 md:pb-6 px-3 md:px-8 pointer-events-none">
           <div className="max-w-4xl mx-auto w-full pointer-events-auto">
               <div className="bg-surface-bright/80 glass-effect rounded-[0.5rem] border border-outline-variant/30 shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex items-end gap-2 p-3 transition-all focus-within:border-primary/50 focus-within:bg-surface-bright">
                 <button className="p-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors flex-shrink-0 mb-0.5" title="Attach Medical File">
@@ -885,7 +901,7 @@ export default function App() {
                 </button>
                 <textarea
                   className="flex-1 max-h-32 bg-transparent border-none text-on-surface placeholder-on-surface-variant font-body text-[15px] resize-none focus:ring-0 p-2.5 custom-scrollbar leading-relaxed"
-                  placeholder="Ask a clinical question, analyze data, or type a symptom..."
+                  placeholder="Ask a clinical question..."
                   rows="1"
                   style={{ minHeight: '44px' }}
                   value={input}
