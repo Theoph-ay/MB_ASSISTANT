@@ -93,8 +93,9 @@ export function AuthProvider({ children }) {
     });
 
     if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Registration failed');
+        const errData = await res.json();
+        const msg = Array.isArray(errData.detail) ? errData.detail[0].msg : (errData.detail || 'Registration failed');
+        throw new Error(msg);
     }
 
     // Auto-login after registration
