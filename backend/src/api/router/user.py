@@ -5,7 +5,8 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
@@ -26,15 +27,15 @@ router = APIRouter()
 )
 async def create_user(
     user: UserCreate,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Logic: Creates a new user.
     """
 
-    existing_user = db.exec(
-        select(User).where(func.lower(User.email) == user.email.lower())
-    ).first()
+    statement = select(User).where(func.lower(User.email) == user.email.lower())
+    result = await db.execute(statement)
+    existing_user = result.scalars().first()
 
     if existing_user:
         raise HTTPException(
@@ -57,16 +58,15 @@ async def create_user(
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Logic: Handles user login by email
     """
 
-    user = await db.exe(
-        select(User)
-        .where(func.lower(User.email) == form_data.username.lower())
-    ).first()
+    statement = select(User).where(func.lower(User.email) == form_data.username.lower())
+    result = await db.execute(statement)
+    user = result.scalars().first()
 
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
@@ -101,7 +101,7 @@ async def update_my_profile(
     user_id: uuid.UUID,
     user_update: UserUpdate,
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Logic: Allows a student to update their name or medical year.
@@ -109,7 +109,7 @@ async def update_my_profile(
     if user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to update this user")
 
-    user = db.get(User, user_id)
+    user = await db.get(User, user_id)
 
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -149,7 +149,7 @@ async def update_my_profile(
 async def delete_my_account(
     user_id: uuid.UUID,
     current_user: CurrentUser,
-    db: Session = Depends(get_session)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Logic: Permanently deletes the student's account and all associated data.
@@ -157,11 +157,11 @@ async def delete_my_account(
     if user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to delete this user")
 
-    db_user = db.get(User, user_id)
+    db_user = await db.get(User, user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    db.delete(db_user)
-    db.commit()
+    await db.delete(db_user)
+    await db.commit()
 
     return None
