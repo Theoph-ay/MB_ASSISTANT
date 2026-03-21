@@ -40,13 +40,7 @@ export default function AuthGate() {
         await register(fullName, email, password, confirmPassword);
       }
     } catch (err) {
-      // Backend FastAPI sometimes sends validation errors as an array in err.detail.
-      // E.g. [{"msg": "Value error, Passwords do not match"}].
-      if (Array.isArray(err.detail)) {
-        setError(err.detail[0]?.msg || 'Authentication failed.');
-      } else {
-        setError(err.message || err.detail || 'Authentication failed. Please try again.');
-      }
+      setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }

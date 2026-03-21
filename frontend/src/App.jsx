@@ -220,8 +220,17 @@ export default function App() {
   const [renameValue, setRenameValue] = useState('');
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
-  const threadId = useRef(crypto.randomUUID());
+  
+  const getInitialThread = () => {
+    const hash = window.location.hash.replace('#', '');
+    return hash && hash.length === 36 ? hash : crypto.randomUUID();
+  };
+  const threadId = useRef(getInitialThread());
   const menuRef = useRef(null);
+
+  useEffect(() => {
+    window.location.hash = threadId.current;
+  }, []);
 
   // Close 3-dot menu when clicking outside
   useEffect(() => {
@@ -267,6 +276,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         threadId.current = data.thread_id;
+        window.location.hash = data.thread_id;
         setMessages(data.messages || []);
       }
     } catch (e) {
@@ -277,6 +287,10 @@ export default function App() {
   useEffect(() => {
     if (isAuthenticated && token) {
       loadSessions();
+      const hash = window.location.hash.replace('#', '');
+      if (hash && hash.length === 36) {
+        loadHistory(hash);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token]);
@@ -389,6 +403,7 @@ export default function App() {
 
   const handleNewConsultation = () => {
     threadId.current = crypto.randomUUID();
+    window.location.hash = threadId.current;
     setMessages([
       { role: 'assistant', content: 'New consultation started. How can I assist you today?' },
     ]);
