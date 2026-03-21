@@ -16,6 +16,7 @@ from src.schemas.chat import (
     DeleteRequest,
     ShareRequest
 )
+from src.core.security import CurrentUser
 from src.api.agent import agent_executor
 
 router = APIRouter()
@@ -23,6 +24,7 @@ router = APIRouter()
 @router.post("", response_model=ChatResponse)
 async def chat_with_assistant(
     request: ChatRequest,
+    current_user: CurrentUser,
     db: Session = Depends(get_session),
 ):
     """
@@ -36,7 +38,7 @@ async def chat_with_assistant(
     if not chat_record:
         chat_record = Chat(
             thread_id = request.thread_id,
-            user_id=uuid.uuid4(), #get current_user.id
+            user_id=current_user.id,
             title="New Consultation"
         )
         db.add(chat_record)
@@ -85,13 +87,14 @@ async def chat_with_assistant(
 @router.get("/history/{thread_id}", response_model=Chat)
 async def get_chat_session(
     thread_id: uuid.UUID,
+    current_user: CurrentUser,
     db: Session = Depends(get_session)
 ):
     """
     Logic: Fetches the entire conversation history for a specific thread.
     """
     chat_record = db.exec(
-        select(Chat).where(Chat.thread_id == thread_id)
+        select(Chat).where(Chat.thread_id == thread_id, Chat.user_id == current_user.id)
     ).first()
     if not chat_record:
         raise HTTPException(
@@ -102,15 +105,15 @@ async def get_chat_session(
 
 @router.get("/sessions", response_model=List[ChatSidebarResponse])
 async def get_user_chat_sessions(
+    current_user: CurrentUser,
     db: Session = Depends(get_session)
 ):
     """
     Logic: Fetches all chat sessions for the current user.
     """
-    mock_user_id = uuid.UUID("123e4567-e89b-12d3-a456-426614174000")
     statement = (
         select(Chat.thread_id, Chat.title, Chat.updated_at)
-        .where(Chat.user_id == mock_user_id) #change to current_user.id
+        .where(Chat.user_id == current_user.id)
         .order_by(Chat.updated_at.desc())
     )
     results = db.exec(statement).all()
@@ -124,8 +127,12 @@ async def get_user_chat_sessions(
     ]
 
 @router.patch("/edit")
-async def edit_message(update: ChatUpdate, db: Session = Depends(get_session)):
-    chat = db.exec(select(Chat).where(Chat.thread_id == update.thread_id)).first()
+async def edit_message(
+    update: ChatUpdate, 
+    current_user: CurrentUser,
+    db: Session = Depends(get_session)
+):
+    chat = db.exec(select(Chat).where(Chat.thread_id == update.thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
 
@@ -142,9 +149,10 @@ async def edit_message(update: ChatUpdate, db: Session = Depends(get_session)):
 @router.patch("/rename")
 async def rename_session(
     body: RenameRequest,
+    current_user: CurrentUser,
     db: Session = Depends(get_session)
 ):
-    chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id)).first()
+    chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     chat.title = body.new_title.strip() or "Untitled"
@@ -156,9 +164,10 @@ async def rename_session(
 @router.delete("/{thread_id}")
 async def delete_session(
     thread_id: uuid.UUID,
+    current_user: CurrentUser,
     db: Session = Depends(get_session)
 ):
-    chat = db.exec(select(Chat).where(Chat.thread_id == thread_id)).first()
+    chat = db.exec(select(Chat).where(Chat.thread_id == thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     db.delete(chat)
@@ -170,9 +179,10 @@ async def delete_session(
 @router.post("/share")
 async def share_chat(
     body: ShareRequest,
+    current_user: CurrentUser,
     db: Session = Depends(get_session)
 ):
-    chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id)).first()
+    chat = db.exec(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id)).first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     # Generate a share_id if one doesn't exist
