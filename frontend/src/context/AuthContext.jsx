@@ -11,14 +11,30 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Parse URL for OAuth tokens
+  // Handle OAuth authorization code exchange (Google login)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('token');
-    if (urlToken) {
-      setToken(urlToken);
-      localStorage.setItem('nexus_auth_token', urlToken);
+    const authCode = params.get('code');
+    if (authCode) {
+      // Immediately clear the code from the URL
       window.history.replaceState({}, document.title, window.location.pathname);
+      // Exchange the code for a JWT via secure POST
+      fetch(`${API_URL}/api/auth/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: authCode }),
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Code exchange failed');
+          return res.json();
+        })
+        .then(data => {
+          setToken(data.access_token);
+          localStorage.setItem('nexus_auth_token', data.access_token);
+        })
+        .catch(err => {
+          console.error('OAuth code exchange failed:', err);
+        });
     }
   }, []);
 
