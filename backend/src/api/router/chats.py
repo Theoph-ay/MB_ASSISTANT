@@ -33,9 +33,9 @@ async def chat_with_assistant(
     Logic: Receives a message, runs the AI Agent, and persists the history to Postgres.
     """
     
-    chat_record = await db.execute(
+    chat_record = (await db.execute(
         select(Chat).where(Chat.thread_id == request.thread_id)
-    ).scalars().first()
+    )).scalars().first()
 
     if not chat_record:
         chat_record = Chat(
@@ -95,9 +95,9 @@ async def get_chat_session(
     """
     Logic: Fetches the entire conversation history for a specific thread.
     """
-    chat_record = await db.execute(
+    chat_record = (await db.execute(
         select(Chat).where(Chat.thread_id == thread_id, Chat.user_id == current_user.id)
-    ).scalars().first()
+    )).scalars().first()
     if not chat_record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -114,11 +114,12 @@ async def get_user_chat_sessions(
     Logic: Fetches all chat sessions for the current user.
     """
     statement = (
-        select(Chat.thread_id, Chat.title, Chat.updated_at)
+        select(Chat)
         .where(Chat.user_id == current_user.id)
         .order_by(Chat.updated_at.desc())
     )
-    results = await db.execute(statement).all()
+    result = await db.execute(statement)
+    results = result.scalars().all()
     return [
         ChatSidebarResponse(
             thread_id=row.thread_id,
@@ -134,7 +135,7 @@ async def edit_message(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_session)
 ):
-    chat = await db.execute(select(Chat).where(Chat.thread_id == update.thread_id, Chat.user_id == current_user.id)).scalars().first()
+    chat = (await db.execute(select(Chat).where(Chat.thread_id == update.thread_id, Chat.user_id == current_user.id))).scalars().first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
 
@@ -154,7 +155,7 @@ async def rename_session(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_session)
 ):
-    chat = await db.execute(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id)).scalars().first()
+    chat = (await db.execute(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id))).scalars().first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     chat.title = body.new_title.strip() or "Untitled"
@@ -169,7 +170,7 @@ async def delete_session(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_session)
 ):
-    chat = await db.execute(select(Chat).where(Chat.thread_id == thread_id, Chat.user_id == current_user.id)).scalars().first()
+    chat = (await db.execute(select(Chat).where(Chat.thread_id == thread_id, Chat.user_id == current_user.id))).scalars().first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     await db.delete(chat)
@@ -184,7 +185,7 @@ async def share_chat(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_session)
 ):
-    chat = await db.execute(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id)).scalars().first()
+    chat = (await db.execute(select(Chat).where(Chat.thread_id == body.thread_id, Chat.user_id == current_user.id))).scalars().first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     # Generate a share_id if one doesn't exist
@@ -207,7 +208,7 @@ async def view_shared_chat(
     share_id: str,
     db: AsyncSession = Depends(get_session)
 ):
-    chat = await db.execute(select(Chat).where(Chat.share_id == share_id)).scalars().first()
+    chat = (await db.execute(select(Chat).where(Chat.share_id == share_id))).scalars().first()
     if not chat:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     return {
