@@ -45,14 +45,28 @@ def call_model(state: State):
 
 def summarize_conversation(state: State):
     """
-    Summarize the conversation to save tokens.
+    Logic: Summarizes only the TEXT content to avoid token bloat from Tool Outputs.
     """
-    messages = state['messages']
+    # 1. Get ONLY the text from the messages (ignore heavy tool data)
+    content_only = [
+        f"{m.type}: {m.content}" for m in state["messages"] 
+        if hasattr(m, 'content') and m.content
+    ]
+    
+    # 2. Limit the context for the summary
+    summary_prompt = (
+        f"Keep the summary concise. "
+        f"Existing summary: {state.get('summary', 'None')}\n\n"
+        f"New context: {' '.join(content_only[-4:])}"
+    )
 
-    summary_msg = f"Summarize the key discussions so far: {state.get('summary', 'No summary yet')}"
-    response = llm.invoke([("system", summary_msg)] + messages)
+    # 3. Use a smaller model if possible, or just the regular LLM
+    response = llm.invoke([("system", summary_prompt)])
 
-    return {"summary": response.content, "messages": messages[-2:]}
+    # 4. IMPORTANT: Return the new summary and DELETE old messages to save space
+    # To delete messages in LangGraph, we send a RemoveMessage or simply 
+    # return a logic that trims the state. 
+    return {"summary": response.content, "messages": state["messages"][:-4]}
 
 # Initialize the graph
 workflow = StateGraph(State)
