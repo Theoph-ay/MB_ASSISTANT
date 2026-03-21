@@ -35,10 +35,8 @@ dependencies = [
     "pyjwt>=2.12.1",
     "pymupdf>=1.27.1",
     "pypdf>=6.7.5",
-    "pytesseract>=0.3.13",
     "python-dotenv>=1.2.1",
     "python-multipart>=0.0.22",
-    "sentence-transformers>=5.2.3",
     "sqlmodel>=0.0.37",
     "xmltodict>=1.0.4",
 ]
