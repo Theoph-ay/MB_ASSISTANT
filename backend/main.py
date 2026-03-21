@@ -8,7 +8,7 @@ from src.api.router import chats, user, auth
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("MB_ASSISTANT: Initializing Database...")
-    init_db()
+    await init_db()
     yield
     await engine.dispose()
     print("MB_ASSISTANT: Shutting Down...")
