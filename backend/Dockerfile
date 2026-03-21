@@ -22,5 +22,7 @@ COPY . .
 # Expose the API port
 EXPOSE 8000
 
-# Startup: run Alembic migrations then launch Uvicorn
-CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn src.main:app --host 0.0.0.0 --port 8000"]
+# Startup script
+RUN chmod +x start.sh
+CMD ["sh", "start.sh"]
+
