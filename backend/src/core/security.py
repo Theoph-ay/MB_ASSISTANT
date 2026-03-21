@@ -1,4 +1,5 @@
 import httpx
+import uuid
 
 from datetime import UTC, datetime, timedelta
 
@@ -39,13 +40,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
         expire = datetime.now(UTC) + expires_delta
     else:
         expire = datetime.now(UTC) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+            minutes=settings.access_token_expire_minutes
         )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, 
-        settings.SECRET_KEY.get_secret_value(), 
-        algorithm=settings.ALGORITHM
+        settings.secret_key, 
+        algorithm=settings.algorithm
     )
     return encoded_jwt
 
@@ -56,8 +57,8 @@ def verify_access_token(token: str) -> str:
     try:
         payload= jwt.decode(
             token,
-            settings.SECRET_KEY.get_secret_value(),
-            algorithms=[settings.ALGORITHM],
+            settings.secret_key,
+            algorithms=[settings.algorithm],
             options={"require": ["exp", "sub"]},
         )
         sub = payload.get("sub")
@@ -89,7 +90,15 @@ async def get_current_user(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user = await db.get(User, user_id) #only works for primaty keys, else use selct, where.
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid subject format in token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = await db.get(User, user_uuid) #only works for primaty keys, else use selct, where.
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

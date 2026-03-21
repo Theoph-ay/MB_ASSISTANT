@@ -28,15 +28,15 @@ class ChatCreate(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
-    thread_id: str
+    thread_id: uuid.UUID
     timestamp: datetime = Field(default_factory=datetime.now)
 
 class ChatRequest(BaseModel):
-    thread_id: str
+    thread_id: uuid.UUID
     message: str
 
 class ChatHistory(BaseModel):
-    thread_id: str
+    thread_id: uuid.UUID
     messages: List[ChatMessage]
     summary: Optional[str] = None
 
@@ -61,7 +61,7 @@ class ShareRequest(BaseModel):
     thread_id: uuid.UUID
 
 class PaginatedResponse(BaseModel):
-    chats: List[ChatMessage]
+    chats: List[ChatSidebarResponse]
     total: int
     skip: int
     limit: int
