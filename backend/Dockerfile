@@ -8,15 +8,15 @@ RUN apt-get update && \
 # Install uv (fast Python package manager)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+# Set the WORKDIR to /app first
+WORKDIR /app
+
 # Copy dependency files first for caching
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy application source
 COPY . .
-
-# Set the WORKDIR to /app (since we've already moved into the backend context)
-WORKDIR /app
 
 # Expose the API port
 EXPOSE 8000
