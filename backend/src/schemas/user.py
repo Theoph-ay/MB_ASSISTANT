@@ -6,7 +6,7 @@ from pydantic import EmailStr, model_validator
 
 class UserBase(SQLModel):
     email: str = Field(unique=True, index=True, nullable=False)
-    full_name: str = Field(unique=True, index=True, nullable=False)
+    full_name: str = Field(index=True, nullable=False)
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8)
@@ -19,7 +19,7 @@ class UserCreate(UserBase):
         return self
 
 class UserRead(UserBase):
-    pass
+    id: uuid.UUID
 
 class UserUpdate(SQLModel):
     email: Optional[str] = None

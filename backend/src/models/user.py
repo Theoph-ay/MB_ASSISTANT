@@ -18,7 +18,7 @@ class User(UserBase, table=True):
         index=True
     )
 
-    username: str = Field(unique=True, index=True, max_length=50)
+    username: Optional[str] = Field(default=None, unique=True, index=True, max_length=50)
     email: str = Field(unique=True, index=True, max_length=120)
     
     hashed_password: Optional[str] = Field(default=None)

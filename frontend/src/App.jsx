@@ -18,9 +18,61 @@ function Icon({ name, fill = false, size = 'text-[20px]', className = '' }) {
 
 /* ── Profile Panel ── */
 function ProfilePanel({ onClose, sessions, user, logout }) {
+  const { token } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ full_name: user?.full_name || '', email: user?.email || '' });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const firstSession = sessions.length > 0
     ? new Date(sessions[sessions.length - 1].updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Today';
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editForm)
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert('Failed to update: ' + (err.detail || 'Unknown error'));
+        setIsSaving(false);
+      }
+    } catch (e) {
+      alert('Error updating profile');
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/users/${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        logout();
+        window.location.href = '/';
+      } else {
+        alert('Failed to delete account');
+        setIsSaving(false);
+      }
+    } catch (e) {
+      alert('Error deleting account');
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -38,53 +90,99 @@ function ProfilePanel({ onClose, sessions, user, logout }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-          {/* User Identity */}
           <div className="flex flex-col items-center text-center gap-3 py-4">
             <div className="w-20 h-20 rounded-full surgical-gradient flex items-center justify-center shadow-lg shadow-primary/20">
               <span className="text-on-primary-container font-headline font-bold text-3xl">
                 {user?.full_name?.charAt(0) || 'U'}
               </span>
             </div>
-            <div>
-              <p className="font-headline font-bold text-on-surface text-lg">
-                {user?.full_name || 'Dr. Unknown'}
-              </p>
-              <p className="text-on-surface-variant text-xs font-medium mt-1">{user?.email}</p>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-surface-container-high rounded-lg p-4 text-center">
-              <p className="font-headline text-2xl font-bold text-primary">{sessions.length}</p>
-              <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mt-1">Consultations</p>
-            </div>
-            <div className="bg-surface-container-high rounded-lg p-4 text-center">
-              <p className="font-headline text-sm font-bold text-primary leading-tight">{firstSession}</p>
-              <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mt-1">Member Since</p>
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3 p-3 bg-surface-container-high rounded-lg">
-              <Icon name="verified" size="text-[18px]" className="text-primary flex-shrink-0" />
-              <div>
-                <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">Status</p>
-                <p className="text-on-surface text-xs font-bold mt-0.5">Active</p>
+            {editing ? (
+              <div className="w-full flex flex-col gap-3 mt-2">
+                <input 
+                  type="text" 
+                  value={editForm.full_name} 
+                  onChange={e => setEditForm({...editForm, full_name: e.target.value})}
+                  className="w-full bg-surface-container-high text-on-surface text-sm rounded px-3 py-2 border border-primary outline-none" 
+                  placeholder="Full Name"
+                />
+                <input 
+                  type="email" 
+                  value={editForm.email} 
+                  onChange={e => setEditForm({...editForm, email: e.target.value})}
+                  className="w-full bg-surface-container-high text-on-surface text-sm rounded px-3 py-2 border border-outline-variant outline-none focus:border-primary" 
+                  placeholder="Email"
+                />
+                <div className="flex gap-2 mt-1">
+                  <button onClick={() => setEditing(false)} className="flex-1 px-3 py-1.5 text-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors font-medium">Cancel</button>
+                  <button onClick={handleSaveProfile} disabled={isSaving} className="flex-1 px-3 py-1.5 surgical-gradient text-on-primary-container font-bold text-xs rounded transition-opacity hover:opacity-90 disabled:opacity-50">Save</button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <p className="font-headline font-bold text-on-surface text-lg">
+                  {user?.full_name || 'Dr. Unknown'}
+                </p>
+                <p className="text-on-surface-variant text-xs font-medium mt-1">{user?.email}</p>
+                <button onClick={() => setEditing(true)} className="mt-2 text-primary text-xs font-bold hover:underline flex items-center justify-center gap-1 mx-auto">
+                  <Icon name="edit" size="text-[14px]"/> Edit Profile
+                </button>
+              </div>
+            )}
           </div>
+
+          {!editing && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-surface-container-high rounded-lg p-4 text-center">
+                  <p className="font-headline text-2xl font-bold text-primary">{sessions.length}</p>
+                  <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mt-1">Consultations</p>
+                </div>
+                <div className="bg-surface-container-high rounded-lg p-4 text-center">
+                  <p className="font-headline text-sm font-bold text-primary leading-tight">{firstSession}</p>
+                  <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mt-1">Member Since</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3 p-3 bg-surface-container-high rounded-lg">
+                  <Icon name="verified" size="text-[18px]" className="text-primary flex-shrink-0" />
+                  <div>
+                    <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest">Status</p>
+                    <p className="text-on-surface text-xs font-bold mt-0.5">Active</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-surface-variant/30">
-          <button
-            onClick={() => { logout(); onClose(); }}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-lg border border-error/30 text-error font-headline font-bold text-sm hover:bg-error/10 transition-colors"
-          >
-            <Icon name="logout" size="text-[18px]" /> Disconnect
-          </button>
+        <div className="p-6 border-t border-surface-variant/30 flex flex-col gap-3">
+          {isDeleting ? (
+            <div className="bg-error/10 border border-error/20 p-4 rounded-lg flex flex-col gap-3 text-center">
+              <p className="text-error font-headline font-bold text-sm">Delete Account?</p>
+              <p className="text-on-surface-variant text-xs font-medium">This action is permanent and cannot be undone.</p>
+              <div className="flex gap-2 mt-1">
+                <button onClick={() => setIsDeleting(false)} className="flex-1 px-3 py-2 text-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors font-medium">Cancel</button>
+                <button onClick={handleDeleteProfile} disabled={isSaving} className="flex-1 px-3 py-2 bg-error text-white font-bold text-xs rounded transition-opacity hover:opacity-90 disabled:opacity-50">Confirm Delete</button>
+              </div>
+            </div>
+          ) : (
+             <button
+              onClick={() => setIsDeleting(true)}
+              className="w-full h-11 rounded-lg bg-surface-container-high text-error font-headline font-bold text-sm hover:bg-error/10 transition-colors"
+            >
+              Delete Account
+            </button>
+          )}
+
+          {!isDeleting && (
+            <button
+              onClick={() => { logout(); onClose(); }}
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-lg border border-outline-variant/30 text-on-surface-variant font-headline font-bold text-sm hover:bg-surface-container-high hover:text-on-surface transition-colors"
+            >
+              <Icon name="logout" size="text-[18px]" /> Disconnect
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -607,7 +705,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={async () => {
-                        await fetch(`http://localhost:8000/api/chat/delete/${session.thread_id}`, {
+                        await fetch(`http://localhost:8000/api/chat/${session.thread_id}`, {
                           method: 'DELETE',
                           headers: { 'Authorization': `Bearer ${token}` },
                         });
