@@ -20,6 +20,7 @@ export default function AuthGate() {
   // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -33,10 +34,19 @@ export default function AuthGate() {
       if (isLogin) {
         await login(email, password);
       } else {
-        await register(fullName, email, password);
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match.');
+        }
+        await register(fullName, email, password, confirmPassword);
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      // Backend FastAPI sometimes sends validation errors as an array in err.detail.
+      // E.g. [{"msg": "Value error, Passwords do not match"}].
+      if (Array.isArray(err.detail)) {
+        setError(err.detail[0]?.msg || 'Authentication failed.');
+      } else {
+        setError(err.message || err.detail || 'Authentication failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -59,12 +69,12 @@ export default function AuthGate() {
             Precision AI for the <span className="text-primary">Next Generation</span> of Medicine.
           </h2>
           <p className="mt-8 text-on-surface-variant text-lg leading-relaxed">
-            Access unlimited clinical consultations, diagnostic AI assistance, and curated medical resources.
+            Access unlimited study notes, AI assistance, and curated medical resources.
           </p>
           <div className="flex gap-8 mt-16">
             <div className="flex flex-col">
               <span className="font-headline text-3xl font-bold text-primary">MBBS</span>
-              <span className="text-xs font-bold uppercase tracking-widest text-outline">2027 Cohort</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-outline">2023 Cohort</span>
             </div>
             <div className="flex flex-col">
               <span className="font-headline text-3xl font-bold text-primary">AI</span>
@@ -88,7 +98,7 @@ export default function AuthGate() {
 
         <div className="w-full max-w-md">
           <header className="mb-8 text-center lg:text-left">
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-3 block">Clinical Access Required</span>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-3 block">Access Required</span>
             <h3 className="font-headline text-3xl font-bold text-on-surface">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h3>
@@ -171,6 +181,23 @@ export default function AuthGate() {
                   />
                 </div>
               </div>
+
+              {!isLogin && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">Confirm Password</label>
+                  <div className="relative">
+                    <Icon name="lock_reset" size="text-[18px]" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                    <input 
+                      type="password" 
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg py-2.5 pl-10 pr-4 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder-on-surface-variant/50"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+              )}
 
               <button 
                 type="submit" 

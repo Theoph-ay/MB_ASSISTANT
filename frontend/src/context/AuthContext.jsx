@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
     return true;
   };
 
-  const register = async (fullName, email, password) => {
+  const register = async (fullName, email, password, confirmPassword) => {
     const res = await fetch('http://localhost:8000/api/users', {
       method: 'POST',
       headers: {
@@ -76,7 +76,8 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({
         full_name: fullName,
         email: email,
-        password: password
+        password: password,
+        confirm_password: confirmPassword
       })
     });
 
