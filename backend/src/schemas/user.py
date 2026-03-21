@@ -12,8 +12,7 @@ class UserCreate(SQLModel):
     email: EmailStr
 
 class UserRead(UserBase):
-    id: uuid.UUID
-    created_at: datetime
+    pass
 
 class UserUpdate(SQLModel):
     email: Optional[str] = None

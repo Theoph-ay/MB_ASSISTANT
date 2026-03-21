@@ -1,5 +1,10 @@
 import uuid
+
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
 from sqlmodel import Session, select
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
@@ -7,6 +12,7 @@ from sqlalchemy.orm import selectinload
 from src.core.config import settings
 from src.db.session import get_session
 from src.models.user import User
+from src.core.security import hash_password, verify_password, create_access_token, CurrentUser
 from src.schemas.user import UserRead, UserUpdate, UserCreate, Token
 
 router = APIRouter()
@@ -38,8 +44,8 @@ async def create_user(
 
     new_user = User(
         email=user.email,
-        full_name=user.full_name
-        password_hash = hash_password(user.password)
+        full_name=user.full_name,
+        hashed_password=hash_password(user.password)
     )
     db.add(new_user)
     await db.commit()
@@ -82,57 +88,76 @@ async def login_for_access_token(
 
 
 @router.get("/me", response_model=UserRead)
-async def get_my_profile(
-    db: Session = Depends(get_session)
+async def get_current_user(
+   current_user: CurrentUser
 ):
     """
     Logic: Returns the authenticated student's profile information.
     """
-    # Placeholder: In the next step, this comes from your Auth token
-    mock_id = uuid.UUID("123e4567-e89b-12d3-a456-426614174000")
-    
-    user = db.get(User, mock_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="User not found"
-        )
-    return user
+    return current_user
 
-@router.patch("/me", response_model=UserRead)
+@router.patch("/{user_id}", response_model=UserRead)
 async def update_my_profile(
-    user_data: UserUpdate,
+    user_id: uuid.UUID,
+    user_update: UserUpdate,
+    current_user: CurrentUser,
     db: Session = Depends(get_session)
 ):
     """
     Logic: Allows a student to update their name or medical year.
     """
-    mock_id = uuid.UUID("123e4567-e89b-12d3-a456-426614174000")
-    db_user = db.get(User, mock_id)
-    
-    if not db_user:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to update this user")
+
+    user = db.get(User, user_id)
+
+    if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    data = user_data.model_dump(exclude_unset=True)
-    for key, value in data.items():
-        setattr(db_user, key, value)
+    if user_update.username is not None and user_update.username.lower() != user.username.lower():
+        result = await db.execute(
+            select(User).where(func.lower(User.username) == user_update.username.lower()),
+        )
+        existing_user = result.scalars().first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists",
+            )
+        
+    if user_update.email is not None and user_update.email.lower() != user.email.lower():
+        result = await db.execute(
+            select(User).where(func.lower(User.email) == user_update.email.lower()),
+        )
+        existing_email = result.scalars().first()
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists",
+            )
 
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    if user_update.username is not None:
+        user.username = user_update.username
+    if user_update.email is not None:
+        user.email = user_update.email.lower()
 
-@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_my_account(
+    user_id: uuid.UUID,
+    current_user: CurrentUser,
     db: Session = Depends(get_session)
 ):
     """
     Logic: Permanently deletes the student's account and all associated data.
     """
-    # Placeholder for current_user.id
-    mock_id = uuid.UUID("123e4567-e89b-12d3-a456-426614174000")
-    
-    db_user = db.get(User, mock_id)
+    if user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to delete this user")
+
+    db_user = db.get(User, user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
