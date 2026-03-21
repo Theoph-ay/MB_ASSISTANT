@@ -22,25 +22,26 @@ async def google_login():
 async def google_callback(code: str, db: Session = Depends(get_session)):
 
     google_data = await get_google_user_info(code)
-    user_info = await get_google_user_info(code)
 
     statement = select(User).where(User.email == google_data["email"])
-    existing_user = db.exec(statement).first()
+    result = await db.execute(statement)
+    existing_user = result.scalars().first()
 
     if existing_user:
-        return existing_user
+        user_id = existing_user.id
     else:
         new_user = User(
             email=google_data["email"],
             full_name=google_data["name"],
+            username=google_data["sub"],
             google_id=google_data["sub"],
             auth_provider="google"
         )
         db.add(new_user)
         await db.commit()
         await db.refresh(new_user)
-        return new_user
+        user_id = new_user.id
 
     # Issue Token
-    token = create_access_token({"sub": str(new_user.id)})
-    return {"access_token": token, "token_type": "bearer"}   
+    token = create_access_token({"sub": str(user_id)})
+    return RedirectResponse(url=f"http://localhost:5173/?token={token}")

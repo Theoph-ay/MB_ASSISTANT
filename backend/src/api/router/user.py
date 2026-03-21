@@ -46,6 +46,7 @@ async def create_user(
     new_user = User(
         email=user.email,
         full_name=user.full_name,
+        username=user.email.split("@")[0] + "_" + str(uuid.uuid4().hex)[:4],
         hashed_password=hash_password(user.password)
     )
     db.add(new_user)
