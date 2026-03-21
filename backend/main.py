@@ -8,7 +8,7 @@ from src.api.router import chats, user, auth
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("MB_ASSISTANT: Connecting Database...")
-    # await init_db() # Disabled since Alembic is doing schema migrations
+    #await init_db() # Disabled since Alembic is doing schema migrations
     yield
     await engine.dispose()
     print("MB_ASSISTANT: Shutting Down...")
@@ -23,7 +23,10 @@ app = FastAPI(
 # Logic: Open the gates for the Frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development, allow everything
+    allow_origins=[
+        "http://localhost:5173",
+        "https://nexus-ai-portal.vercel.app"
+        ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

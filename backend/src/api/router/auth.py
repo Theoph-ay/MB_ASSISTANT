@@ -45,4 +45,4 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_session)):
 
     # Issue Token
     token = create_access_token({"sub": str(user_id)})
-    return RedirectResponse(url=f"http://localhost:5173/?token={token}")
+    return RedirectResponse(url=f"{settings.FRONTEND_URL}/?token={token}")

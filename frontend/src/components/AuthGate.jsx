@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 /* ── Helper: Material Icon shorthand ── */
 function Icon({ name, fill = false, size = 'text-[20px]', className = '' }) {
@@ -217,7 +218,7 @@ export default function AuthGate() {
                 <div className="flex-1 h-px bg-outline-variant/20"></div>
               </div>
               <a 
-                href="http://localhost:8000/api/auth/login/google"
+                href={`${API_URL}/api/auth/login/google`}
                 className="w-full bg-surface-container-highest hover:bg-surface-container-highest/80 border border-outline-variant/30 text-on-surface font-headline font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-3 text-sm"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">

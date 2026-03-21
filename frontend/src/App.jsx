@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from './context/AuthContext';
 import AuthGate from './components/AuthGate';
+import { API_URL } from './config';
 
 /* ── Helper: Material Icon shorthand ── */
 function Icon({ name, fill = false, size = 'text-[20px]', className = '' }) {
@@ -31,7 +32,7 @@ function ProfilePanel({ onClose, sessions, user, logout }) {
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/users/${user.id}`, {
+      const res = await fetch(`${API_URL}/api/users/${user.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +56,7 @@ function ProfilePanel({ onClose, sessions, user, logout }) {
   const handleDeleteProfile = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/users/${user.id}`, {
+      const res = await fetch(`${API_URL}/api/users/${user.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -196,7 +197,7 @@ function SharedChatView({ shareId }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/chat/share/${shareId}`)
+    fetch(`${API_URL}/api/chat/share/${shareId}`)
       .then(res => {
         if (!res.ok) throw new Error('Shared consultation not found');
         return res.json();
@@ -350,7 +351,7 @@ export default function App() {
 
   const loadSessions = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/chat/sessions', {
+      const res = await fetch(`${API_URL}/api/chat/sessions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -366,7 +367,7 @@ export default function App() {
 
   const loadHistory = async (id) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/chat/history/${id}`, {
+      const res = await fetch(`${API_URL}/api/chat/history/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -404,7 +405,7 @@ export default function App() {
     setIsStreaming(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -454,7 +455,7 @@ export default function App() {
     setIsStreaming(true);
 
     try {
-      await fetch('http://localhost:8000/api/chat/edit', {
+      await fetch(`${API_URL}/api/chat/edit`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -467,7 +468,7 @@ export default function App() {
         }),
       });
 
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -513,7 +514,7 @@ export default function App() {
   const handleShare = async () => {
     if (!isAuthenticated) return;
     try {
-      const res = await fetch('http://localhost:8000/api/chat/share', {
+      const res = await fetch(`${API_URL}/api/chat/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ thread_id: threadId.current }),
@@ -657,7 +658,7 @@ export default function App() {
                       onChange={(e) => setRenameValue(e.target.value)}
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
-                          await fetch('http://localhost:8000/api/chat/rename', {
+                          await fetch(`${API_URL}/api/chat/rename`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                             body: JSON.stringify({ thread_id: session.thread_id, new_title: renameValue }),
@@ -705,7 +706,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={async () => {
-                        await fetch(`http://localhost:8000/api/chat/${session.thread_id}`, {
+                        await fetch(`${API_URL}/api/chat/${session.thread_id}`, {
                           method: 'DELETE',
                           headers: { 'Authorization': `Bearer ${token}` },
                         });
