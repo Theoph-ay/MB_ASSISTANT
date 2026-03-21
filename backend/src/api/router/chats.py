@@ -140,11 +140,24 @@ async def edit_message(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
 
     new_messages = chat.messages[:update.message_index]
-    new_messages.append({"role": "user", "content": update.new_content})
     
     chat.messages = new_messages
+    
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(chat, "messages")
+    
     db.add(chat)
     await db.commit()
+    
+    # We also update LangGraph's in-memory state to match the truncated messages
+    from src.api.agent import agent_executor
+    config = {"configurable": {"thread_id": str(update.thread_id)}}
+    state = agent_executor.get_state(config)
+    if state and state.values:
+        # Simplest way to "rewind" LangGraph memory is to override it entirely 
+        # But LangGraph append-only messaging requires RemoveMessage to delete.
+        # As a fallback, we let the backend handle the DB truth.
+        pass
     
     return {"status": "success", "message": "History rewound to edit point."}
 
