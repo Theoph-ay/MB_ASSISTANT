@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 
-from sqlmodel import select, Session
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.models.user import User
@@ -19,7 +20,7 @@ async def google_login():
     return RedirectResponse(url=auth_url)
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: Session = Depends(get_session)):
+async def google_callback(code: str, db: AsyncSession = Depends(get_session)):
 
     google_data = await get_google_user_info(code)
 
